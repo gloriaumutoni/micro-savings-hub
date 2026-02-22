@@ -34,10 +34,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+          # cache: 'npm'  # we will uncomment when lock files exist
+          # cache-dependency-path: |
+          #   backend/package-lock.json
+          #   frontend/package-lock.json
 
       # // we will uncomment this when backend/package.json is added
       # - name: Install backend dependencies
