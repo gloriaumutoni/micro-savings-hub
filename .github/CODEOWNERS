@@ -1,0 +1,24 @@
+# CODEOWNERS
+# Defines code ownership for micro-savings-hub.
+# Owners are automatically requested for review when their files change in a PR.
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# -------------------------------------------------------
+# Global — team lead reviews every change
+# -------------------------------------------------------
+* @josueahadi
+
+# -------------------------------------------------------
+# Backend — API, database, services
+# -------------------------------------------------------
+/backend/ @gloriaumutoni @josueahadi
+
+# -------------------------------------------------------
+# Frontend — React app, components, pages
+# -------------------------------------------------------
+/frontend/ @Chartine02 @josueahadi
+
+# -------------------------------------------------------
+# DevOps / CI — workflows, infra config
+# -------------------------------------------------------
+/.github/ @josueahadi
