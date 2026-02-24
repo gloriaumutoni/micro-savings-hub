@@ -67,8 +67,8 @@ Security and transparency are first-class concerns. Every contribution is record
 
 ### Prerequisites
 - Node.js 22+
-- PostgreSQL 17+ running locally
 - npm 10+
+- A [Neon](https://neon.tech) account (free) — used as the shared PostgreSQL database
 
 ### Installation
 
