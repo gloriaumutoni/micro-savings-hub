@@ -4,21 +4,21 @@ about: Report a reproducible bug
 labels: bug
 ---
 
-## Describe the Bug
+### Describe the Bug
 <!-- A clear description of what the bug is -->
 
-## Steps to Reproduce
+### Steps to Reproduce
 1.
 2.
 3.
 
-## Expected Behaviour
+### Expected Behaviour
 <!-- What should have happened -->
 
-## Actual Behaviour
+### Actual Behaviour
 <!-- What actually happened -->
 
-## Environment
+### Environment
 - OS:
 - Node version:
 - Browser (if frontend):
