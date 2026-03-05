@@ -4,13 +4,17 @@ about: Propose a new feature using the user story format
 labels: feature
 ---
 
-## User Story
+### User Story
 As a **[type of user]**, I want **[goal]** so that **[benefit]**.
 
-## Acceptance Criteria
+### Acceptance Criteria
 - [ ]
 - [ ]
 - [ ]
 
-## Additional Context
+### Definition of Done
+- [ ]
+- [ ]
+
+### Additional Context
 <!-- Screenshots, mockups, or any other relevant information -->
