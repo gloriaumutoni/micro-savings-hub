@@ -3,9 +3,12 @@
 
 ## Type of Change
 - [ ] Feature — new functionality
-- [ ] Bug fix — resolves an issue
-- [ ] DevOps — CI, infra, config changes
+- [ ] Bug fix — resolves a defect or unexpected behaviour
+- [ ] Refactor — code change with no functional difference
+- [ ] DevOps — CI, Docker, infrastructure, or config changes
 - [ ] Docs — documentation only
+- [ ] Test — adding or updating tests
+- [ ] Chore — dependency updates, tooling, repo maintenance
 
 ## Related Issue
 Closes #<!-- issue number -->
