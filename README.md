@@ -2,7 +2,7 @@
 
 > Empowering Community Savings Across Africa
 
-![CI](https://github.com/YOUR-ORG/micro-savings-hub/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/gloriaumutoni/micro-savings-hub/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
 ---
@@ -72,7 +72,53 @@ Security and transparency are first-class concerns. Every contribution is record
 
 ### Installation
 
-> Setup instructions to follow once the backend and frontend are scaffolded.
+**1. Clone the repository**
+```bash
+git clone https://github.com/gloriaumutoni/micro-savings-hub.git
+cd micro-savings-hub
+```
+
+**2. Configure the backend**
+```bash
+cd backend
+cp .env.example .env
+# Paste the shared Neon DATABASE_URL into .env
+```
+
+**3. Run the backend**
+```bash
+npm install
+npm run dev
+# API available at http://localhost:5000
+```
+
+### Usage
+
+**Health check**
+```bash
+curl http://localhost:5000/health
+```
+
+**Create a savings group**
+```bash
+curl -X POST http://localhost:5000/api/groups \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Ibimina Youth Collective", "description": "Monthly savings for school fees", "targetAmount": 500000, "currency": "RWF"}'
+```
+
+**Add a contribution**
+```bash
+curl -X POST http://localhost:5000/api/groups/<group-id>/contribute \
+  -H "Content-Type: application/json" \
+  -d '{"memberName": "Gloria", "amount": 20000}'
+```
+
+**View group summary**
+```bash
+curl http://localhost:5000/api/groups/<group-id>
+```
+
+> Frontend setup instructions will be added once scaffolded.
 
 ---
 
@@ -104,16 +150,6 @@ micro-savings-hub/
 │   │   └── init.sql                # Database schema
 │   ├── app.js
 │   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/             # Reusable UI components
-│   │   ├── pages/                  # Route-level pages
-│   │   ├── services/
-│   │   │   └── api.ts              # Axios API client
-│   │   └── types/
-│   │       └── index.ts            # TypeScript interfaces
-│   ├── index.html
-│   └── package.json
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -123,8 +159,8 @@ micro-savings-hub/
 
 ## Links
 
-- [Project Board](https://github.com/YOUR-ORG/micro-savings-hub/projects)
-- [CI Pipeline](https://github.com/YOUR-ORG/micro-savings-hub/actions)
+- [Project Board](https://github.com/gloriaumutoni/micro-savings-hub/projects)
+- [CI Pipeline](https://github.com/gloriaumutoni/micro-savings-hub/actions)
 
 ---
 
