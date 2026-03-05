@@ -157,6 +157,67 @@ micro-savings-hub/
 
 ---
 
+## Contributing
+Follow this process to keep the codebase clean and reviewable.
+
+### 1. Create an Issue First
+
+Before starting work, open an issue using the appropriate template:
+
+| Template | When to use |
+|----------|-------------|
+| **Bug Report** | Something is broken or behaving unexpectedly |
+| **Feature Request** | You want to propose/add new functionality |
+| **Task** | Planned work — DevOps, infrastructure, config, or anything that doesn't fit the above |
+
+Go to **Issues → New Issue** on GitHub and select the matching template.
+
+### 2. Branch Naming
+
+Create a branch from `main` using this convention:
+
+```
+<type>/<short-description>
+```
+
+| Type | Use for |
+|------|---------|
+| `feat/` | New feature |
+| `fix/` | Bug fix |
+| `chore/` | Maintenance, dependencies, tooling |
+| `ci/` | CI/CD changes |
+| `docs/` | Documentation only |
+| `refactor/` | Code restructure with no behaviour change |
+| `build/` | Docker, build system changes |
+
+Examples: `feat/user-auth`, `fix/contribution-null-check`, `ci/add-lint-step`
+
+### 3. Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <short summary>
+```
+
+Examples:
+```
+feat(auth): add JWT login endpoint
+fix(groups): handle missing targetAmount gracefully
+chore: update dotenv to v16.4.7
+ci: uncomment lint step in CI workflow
+```
+
+### 4. Open a Pull Request
+
+1. Push your branch and open a PR targeting `main`.
+2. Fill in the PR template — summary, type of change, and testing steps.
+3. Request a review from at least one team member.
+4. All CI checks must pass before merging.
+5. The reviewer merges after approval — do not self-merge.
+
+---
+
 ## Links
 
 - [Project Board](https://github.com/gloriaumutoni/micro-savings-hub/projects)
