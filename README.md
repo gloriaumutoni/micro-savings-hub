@@ -17,11 +17,11 @@ This creates real problems: contributions go unrecorded, totals are disputed, an
 
 ## Team Members
 
-| Name           | GitHub                                             | Role                          | Student ID |
-| -------------- | -------------------------------------------------- | ----------------------------- | ---------- |
-| Gloria Umutoni | [@gloriaumutoni](https://github.com/gloriaumutoni) | Team Lead / Backend Developer | [ID]       |
-| Josue Ahadi    | [@josueahadi](https://github.com/josueahadi)       | DevOps Engineer               | [ID]       |
-| Chartine       | [@Chartine02](https://github.com/Chartine02)       | Frontend Developer            | [ID]       |
+| Name | GitHub | Role |
+|------|--------|------|
+| Gloria Umutoni | [@gloriaumutoni](https://github.com/gloriaumutoni) | Team Lead / Backend Developer |
+| Josue Ahadi | [@josueahadi](https://github.com/josueahadi) | DevOps Engineer |
+| Chartine | [@Chartine02](https://github.com/Chartine02) | Frontend Developer |
 
 ---
 
