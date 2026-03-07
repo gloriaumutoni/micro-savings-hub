@@ -10,21 +10,20 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # // we will uncomment this when backend is ready
-    # services:
-    #   postgres:
-    #     image: postgres:17
-    #     env:
-    #       POSTGRES_USER: postgres
-    #       POSTGRES_PASSWORD: postgres
-    #       POSTGRES_DB: micro_savings_hub_test
-    #     ports:
-    #       - 5432:5432
-    #     options: >-
-    #       --health-cmd pg_isready
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: micro_savings_hub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -33,35 +32,36 @@ jobs:
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          # cache: 'npm'  # we will uncomment when lock files exist
-          # cache-dependency-path: |
-          #   backend/package-lock.json
-          #   frontend/package-lock.json
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: |
+            backend/package-lock.json
+          #  frontend/package-lock.json
 
-      # // we will uncomment this when backend/package.json is added
-      # - name: Install backend dependencies
-      #   working-directory: backend
-      #   run: npm ci
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
 
-      # // we will uncomment this when backend/db/init.sql is added
-      # - name: Run database migrations
-      #   working-directory: backend
-      #   env:
-      #     PGPASSWORD: postgres
-      #   run: psql -h localhost -U postgres -d micro_savings_hub_test -f db/init.sql
+      - name: Lint backend
+        working-directory: backend
+        run: npm run lint
 
-      # // we will uncomment when backend/app.js is added
-      # - name: Verify backend starts
-      #   working-directory: backend
-      #   env:
-      #     PORT: 5001
-      #     DATABASE_URL: postgresql://postgres:postgres@localhost:5432/micro_savings_hub_test
-      #   run: |
-      #     node app.js &
-      #     sleep 3
-      #     curl -f http://localhost:5001/health
-      #     kill %1
+      - name: Run database migrations
+        working-directory: backend
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d micro_savings_hub_test -f db/init.sql
+
+      - name: Verify backend starts
+        working-directory: backend
+        env:
+          PORT: 5001
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/micro_savings_hub_test
+        run: |
+          node app.js &
+          sleep 3
+          curl -f http://localhost:5001/health
+          kill %1
 
       #  //  we will ucomment when frontend/package.json is added
       # - name: Install frontend dependencies
