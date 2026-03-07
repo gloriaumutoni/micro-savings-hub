@@ -2,41 +2,27 @@ name: CI
 
 on:
   push:
-    branches-ignore: [main]
+    branches-ignore:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  build-and-test:
+  backend:
+    name: Backend — Lint & Test
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: micro_savings_hub_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 22
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: |
-            backend/package-lock.json
-          #  frontend/package-lock.json
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install backend dependencies
         working-directory: backend
@@ -46,34 +32,49 @@ jobs:
         working-directory: backend
         run: npm run lint
 
-      - name: Run database migrations
+      - name: Run backend tests
         working-directory: backend
-        env:
-          PGPASSWORD: postgres
-        run: psql -h localhost -U postgres -d micro_savings_hub_test -f db/init.sql
+        run: npm test
 
-      - name: Verify backend starts
-        working-directory: backend
-        env:
-          PORT: 5001
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/micro_savings_hub_test
+  frontend:
+    name: Frontend — Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+  docker:
+    name: Docker — Build Image
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
         run: |
-          node app.js &
-          sleep 3
-          curl -f http://localhost:5001/health
-          kill %1
-
-      #  //  we will ucomment when frontend/package.json is added
-      # - name: Install frontend dependencies
-      #   working-directory: frontend
-      #   run: npm ci
-
-      # we will  uncomment this when frontend TypeScript is set up
-      # - name: Type-check frontend
-      #   working-directory: frontend
-      #   run: npx tsc --noEmit
-
-      #  //  we will uncomment when frontend build is configured
-      # - name: Build frontend
-      #   working-directory: frontend
-      #   run: npm run build
+          docker build \
+            --tag micro-savings-hub:${{ github.sha }} \
+            --tag micro-savings-hub:latest \
+            .
