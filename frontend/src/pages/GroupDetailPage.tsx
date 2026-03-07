@@ -1,26 +1,29 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import type { Group } from '../types';
-import { fetchGroup } from '../services/api';
-import { ProgressBar } from '../components/ProgressBar';
-import { ContributeModal } from '../components/ContributeModal';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import type { Group } from "../types";
+import { fetchGroup } from "../services/api";
+import { ProgressBar } from "../components/ProgressBar";
+import { ContributeModal } from "../components/ContributeModal";
 
 const formatAmount = (amount: string | number, currency: string) => {
-  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
   return (
-    new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(num) +
-    ' ' +
+    new Intl.NumberFormat("en-US", {
+      style: "decimal",
+      maximumFractionDigits: 0,
+    }).format(num) +
+    " " +
     currency
   );
 };
 
 const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
 export const GroupDetailPage = () => {
@@ -39,13 +42,15 @@ export const GroupDetailPage = () => {
       const data = await fetchGroup(id);
       setGroup(data);
     } catch {
-      setError('Group not found or the server is unreachable.');
+      setError("Group not found or the server is unreachable.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadGroup(); }, [id]);
+  useEffect(() => {
+    loadGroup();
+  }, [id]);
 
   if (loading) {
     return (
@@ -58,9 +63,9 @@ export const GroupDetailPage = () => {
   if (error || !group) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-        <p className="text-red-500">{error ?? 'Something went wrong.'}</p>
+        <p className="text-red-500">{error ?? "Something went wrong."}</p>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="text-green-600 text-sm font-medium hover:underline"
         >
           ← Back to groups
@@ -77,7 +82,7 @@ export const GroupDetailPage = () => {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="text-gray-400 hover:text-gray-700 text-sm font-medium transition"
           >
             ← Back
@@ -104,14 +109,14 @@ export const GroupDetailPage = () => {
 
           <div className="mt-4">
             <ProgressBar
-              value={parseFloat(group.total_saved)}
-              target={parseFloat(group.target_amount)}
+              value={parseFloat(group.totalSaved)}
+              target={parseFloat(group.targetAmount)}
               currency={group.currency}
             />
           </div>
 
           <div className="mt-5 flex items-center justify-between text-sm text-gray-400">
-            <span>Created {formatDate(group.created_at)}</span>
+            <span>Created {formatDate(group.createdAt)}</span>
             <button
               onClick={() => setShowContribute(true)}
               className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-green-700 transition"
@@ -123,13 +128,18 @@ export const GroupDetailPage = () => {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Contribution History</h2>
-            <span className="text-xs text-gray-400">{contributions.length} record{contributions.length !== 1 ? 's' : ''}</span>
+            <h2 className="font-semibold text-gray-900">
+              Contribution History
+            </h2>
+            <span className="text-xs text-gray-400">
+              {contributions.length} record
+              {contributions.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
           {contributions.length === 0 ? (
             <div className="py-12 text-center text-gray-400 text-sm">
-              No contributions yet.{' '}
+              No contributions yet.{" "}
               <button
                 onClick={() => setShowContribute(true)}
                 className="text-green-600 font-medium hover:underline"
@@ -147,13 +157,20 @@ export const GroupDetailPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {contributions.map(c => (
-                  <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3 font-medium text-gray-800">{c.member_name}</td>
+                {contributions.map((c) => (
+                  <tr
+                    key={c.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-5 py-3 font-medium text-gray-800">
+                      {c.userEmail}
+                    </td>
                     <td className="px-5 py-3 text-right text-green-700 font-semibold">
                       + {formatAmount(c.amount, group.currency)}
                     </td>
-                    <td className="px-5 py-3 text-right text-gray-400">{formatDate(c.created_at)}</td>
+                    <td className="px-5 py-3 text-right text-gray-400">
+                      {formatDate(c.createdAt)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
