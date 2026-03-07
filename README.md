@@ -17,11 +17,11 @@ This creates real problems: contributions go unrecorded, totals are disputed, an
 
 ## Team Members
 
-| Name | GitHub | Role |
-|------|--------|------|
+| Name           | GitHub                                             | Role                          |
+| -------------- | -------------------------------------------------- | ----------------------------- |
 | Gloria Umutoni | [@gloriaumutoni](https://github.com/gloriaumutoni) | Team Lead / Backend Developer |
-| Josue Ahadi | [@josueahadi](https://github.com/josueahadi) | DevOps Engineer |
-| Chartine | [@Chartine02](https://github.com/Chartine02) | Frontend Developer |
+| Josue Ahadi    | [@josueahadi](https://github.com/josueahadi)       | DevOps Engineer               |
+| Chartine       | [@Chartine02](https://github.com/Chartine02)       | Frontend Developer            |
 
 ---
 
@@ -276,6 +276,39 @@ ci: uncomment lint step in CI workflow
 3. Request a review from at least one team member.
 4. All CI checks must pass before merging.
 5. The reviewer merges after approval — do not self-merge.
+
+---
+
+## Formative 2 — Part 3: Integration & Evidence
+
+### Branch protection (main)
+
+- Require PR before merge
+- Require 1 approval
+- Require CI checks to pass
+- Require branch to be up to date
+
+**Screenshot of the rules set:**
+!(rules set)[docs/images/branch_protection_1.png]
+!(rules set)[docs/images/branch_protection_2.png]
+
+### CI evidence
+
+**3 successful runs:**
+
+- Run 1: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807904494)
+- Run 2: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807962380)
+- Run 3: [Creating PR](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807996726)
+
+**4 failed run (then fixed):**
+
+- Failed run: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808182770 (intentional test failure to prove CI blocks merge)
+- Fix commit: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264133
+- Passing run after fix: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264907
+
+### Pull request evidence
+
+- PR showing CI + code review: https://github.com/gloriaumutoni/micro-savings-hub/pull/30
 
 ---
 
