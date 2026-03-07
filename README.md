@@ -247,11 +247,11 @@ ci: uncomment lint step in CI workflow
 
 **3 successful runs:**
 
-- Run 1: <link>
-- Run 2: <link>
-- Run 3: <link>
+- Run 1: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807904494)
+- Run 2: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807962380)
+- Run 3: [Creating PR](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807996726)
 
-**1 failed run (then fixed):**
+**4 failed run (then fixed):**
 
 - Failed run: <link> (reason: <brief reason>)
 - Fix commit: <link>
