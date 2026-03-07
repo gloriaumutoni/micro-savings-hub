@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import type { Group } from '../types';
-import { ProgressBar } from './ProgressBar';
+import { useNavigate } from "react-router-dom";
+import type { Group } from "../types";
+import { ProgressBar } from "./ProgressBar";
 
 interface GroupCardProps {
   group: Group;
@@ -8,13 +8,13 @@ interface GroupCardProps {
 
 export const GroupCard = ({ group }: GroupCardProps) => {
   const navigate = useNavigate();
-  const saved = parseFloat(group.total_saved);
-  const target = parseFloat(group.target_amount);
+  const saved = parseFloat(group.totalSaved);
+  const target = parseFloat(group.targetAmount);
 
-  const formattedDate = new Date(group.created_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  const formattedDate = new Date(group.createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 
   return (
@@ -28,7 +28,9 @@ export const GroupCard = ({ group }: GroupCardProps) => {
             {group.name}
           </h3>
           {group.description && (
-            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{group.description}</p>
+            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+              {group.description}
+            </p>
           )}
         </div>
         <span className="text-xs font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-100">
