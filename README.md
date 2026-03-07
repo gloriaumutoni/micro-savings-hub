@@ -1,4 +1,4 @@
-# Micro-savings-hub
+# AfrikaSave — micro-savings-hub
 
 > Empowering Community Savings Across Africa
 
@@ -29,7 +29,7 @@ This creates real problems: contributions go unrecorded, totals are disputed, an
 
 AfrikaSave is a community-focused fintech platform that digitises savings groups for African communities. It provides a simple API and web interface for creating groups, recording contributions, and tracking collective progress toward a savings goal.
 
-The platform is designed with a microservices-ready architecture: the backend API handles all business logic and data persistence, while the frontend React application (coming in F2) will consume it. Both services are independently runnable and independently deployable — a foundation that naturally evolves into separate containerised services in later phases.
+The platform is designed with a microservices-ready architecture: the backend API handles all business logic and data persistence, while the frontend React application consumes it. Both services are independently runnable and independently deployable — a foundation that naturally evolves into separate containerised services in later phases.
 
 Security and transparency are first-class concerns. Every contribution is recorded with a timestamp and member name, group totals are updated atomically via database transactions, and no money is ever stored — AfrikaSave is a record-keeping and accountability tool, not a payment processor.
 
@@ -52,16 +52,16 @@ Security and transparency are first-class concerns. Every contribution is record
 
 ## Technology Stack
 
-| Layer               | Technology                                    |
-| ------------------- | --------------------------------------------- |
-| **Backend**         | Node.js 22, Express 5                         |
-| **Database**        | PostgreSQL 17                                 |
-| **Frontend**        | React 19, TypeScript, Vite 6 _(coming in F2)_ |
-| **Styling**         | Tailwind CSS v4 _(coming in F2)_              |
-| **HTTP Client**     | Axios _(coming in F2)_                        |
-| **Routing**         | React Router v7 _(coming in F2)_              |
-| **CI/CD**           | GitHub Actions                                |
-| **Version Control** | Git / GitHub                                  |
+| Layer               | Technology                   |
+| ------------------- | ---------------------------- |
+| **Backend**         | Node.js 22, Express 5        |
+| **Database**        | PostgreSQL 17                |
+| **Frontend**        | React 19, TypeScript, Vite 6 |
+| **Styling**         | Tailwind CSS v4              |
+| **HTTP Client**     | Axios                        |
+| **Routing**         | React Router v7              |
+| **CI/CD**           | GitHub Actions               |
+| **Version Control** | Git / GitHub                 |
 
 ---
 
@@ -71,128 +71,42 @@ Security and transparency are first-class concerns. Every contribution is record
 
 - Node.js 22+
 - npm 10+
-- PostgreSQL 17+ running locally **or** a [Neon](https://neon.tech) account (free tier is sufficient)
+- A [Neon](https://neon.tech) account (free) — used as the shared PostgreSQL database
 
----
+### Installation
 
-### 1. Clone the repository
+**1. Clone the repository**
 
 ```bash
 git clone https://github.com/gloriaumutoni/micro-savings-hub.git
 cd micro-savings-hub
 ```
 
----
-
-### 2. Configure environment variables
+**2. Configure the backend**
 
 ```bash
 cd backend
 cp .env.example .env
+# Paste the shared Neon DATABASE_URL into .env
 ```
 
-Open `.env` and fill in your database connection string:
-
-```env
-PORT=5000
-DATABASE_URL=postgresql://user:password@localhost:5432/micro_savings_hub
-```
-
-**Using Neon instead of a local database?**
-Paste the connection string from your Neon project dashboard → Connection Details:
-
-```env
-DATABASE_URL=postgresql://user:password@ep-xxxx.neon.tech/micro_savings_hub?sslmode=require
-```
-
-> ⚠️ Never commit `.env`. It is listed in `.gitignore` and must stay local.
-
----
-
-### 3. Install dependencies
+**3. Run the backend**
 
 ```bash
 npm install
-```
-
-> This generates `package-lock.json`. If you are the first person setting up the project, commit the lockfile so that all teammates and CI use identical dependency versions.
->
-> Everyone else on the team (and CI) should run `npm ci` instead, which installs exact versions from the lockfile without modifying it.
-
----
-
-### 4. Set up the database schema
-
-**Local PostgreSQL:**
-
-```bash
-# Create the database if it doesn't exist yet
-createdb micro_savings_hub
-
-# Apply the schema
-psql -h localhost -U postgres -d micro_savings_hub -f db/init.sql
-```
-
-**Neon:**
-Open the Neon SQL Editor for your project, paste the contents of `backend/db/init.sql`, and run it. You only need to do this once.
-
----
-
-### 5. Start the development server
-
-```bash
 npm run dev
 # API available at http://localhost:5000
 ```
 
-`npm run dev` uses Node's built-in `--watch` flag and restarts automatically on file changes.
-Use `npm start` for a plain single-run start (used in production and CI).
+### Usage
 
----
-
-### 6. Verify the server is running
+**Health check**
 
 ```bash
 curl http://localhost:5000/health
 ```
 
-Expected response:
-
-```json
-{
-  "status": "ok",
-  "service": "micro-savings-hub-api",
-  "timestamp": "2026-01-01T00:00:00.000Z"
-}
-```
-
----
-
-### 7. Lint before pushing
-
-CI will reject any PR that fails the lint check. Run it locally first to catch issues early:
-
-```bash
-npm run lint
-```
-
----
-
-### Frontend
-
-Frontend setup instructions will be added in F2 once the React app is scaffolded.
-
----
-
-## API Reference
-
-### Health check
-
-```bash
-curl http://localhost:5000/health
-```
-
-### Create a savings group
+**Create a savings group**
 
 ```bash
 curl -X POST http://localhost:5000/api/groups \
@@ -200,25 +114,21 @@ curl -X POST http://localhost:5000/api/groups \
   -d '{"name": "Ibimina Youth Collective", "description": "Monthly savings for school fees", "targetAmount": 500000, "currency": "RWF"}'
 ```
 
-### List all groups
-
-```bash
-curl http://localhost:5000/api/groups
-```
-
-### View group summary (with full contribution history)
-
-```bash
-curl http://localhost:5000/api/groups/<group-id>
-```
-
-### Add a contribution
+**Add a contribution**
 
 ```bash
 curl -X POST http://localhost:5000/api/groups/<group-id>/contribute \
   -H "Content-Type: application/json" \
   -d '{"memberName": "Gloria", "amount": 20000}'
 ```
+
+**View group summary**
+
+```bash
+curl http://localhost:5000/api/groups/<group-id>
+```
+
+> Frontend setup instructions will be added once scaffolded.
 
 ---
 
@@ -231,8 +141,7 @@ micro-savings-hub/
 │   │   └── ci.yml                  # CI pipeline
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
-│   │   ├── feature_request.md
-│   │   └── task.md
+│   │   └── feature_request.md
 │   ├── CODEOWNERS
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── backend/
@@ -250,7 +159,6 @@ micro-savings-hub/
 │   ├── db/
 │   │   └── init.sql                # Database schema
 │   ├── app.js
-│   ├── eslint.config.mjs
 │   └── package.json
 ├── .gitignore
 ├── LICENSE
@@ -260,6 +168,8 @@ micro-savings-hub/
 ---
 
 ## Contributing
+
+Follow this process to keep the codebase clean and reviewable.
 
 ### 1. Create an Issue First
 
