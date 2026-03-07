@@ -17,11 +17,11 @@ This creates real problems: contributions go unrecorded, totals are disputed, an
 
 ## Team Members
 
-| Name | GitHub | Role |
-|------|--------|------|
+| Name           | GitHub                                             | Role                          |
+| -------------- | -------------------------------------------------- | ----------------------------- |
 | Gloria Umutoni | [@gloriaumutoni](https://github.com/gloriaumutoni) | Team Lead / Backend Developer |
-| Josue Ahadi | [@josueahadi](https://github.com/josueahadi) | DevOps Engineer |
-| Chartine | [@Chartine02](https://github.com/Chartine02) | Frontend Developer |
+| Josue Ahadi    | [@josueahadi](https://github.com/josueahadi)       | DevOps Engineer               |
+| Chartine       | [@Chartine02](https://github.com/Chartine02)       | Frontend Developer            |
 
 ---
 
@@ -227,6 +227,39 @@ ci: uncomment lint step in CI workflow
 3. Request a review from at least one team member.
 4. All CI checks must pass before merging.
 5. The reviewer merges after approval — do not self-merge.
+
+---
+
+## Formative 2 — Part 3: Integration & Evidence
+
+### Branch protection (main)
+
+- Require PR before merge
+- Require 1 approval
+- Require CI checks to pass
+- Require branch to be up to date
+
+**Screenshot of the rules set:**
+!(rules set)[docs/images/branch_protection_1.png]
+!(rules set)[docs/images/branch_protection_2.png]
+
+### CI evidence
+
+**3 successful runs:**
+
+- Run 1: <link>
+- Run 2: <link>
+- Run 3: <link>
+
+**1 failed run (then fixed):**
+
+- Failed run: <link> (reason: <brief reason>)
+- Fix commit: <link>
+- Passing run after fix: <link>
+
+### Pull request evidence
+
+- PR showing CI + code review: <link>
 
 ---
 
