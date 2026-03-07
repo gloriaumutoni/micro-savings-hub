@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    # Persist data across restarts using a named volume
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Auto-run schema on first startup (only runs when the data volume is empty)
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-micro_savings_hub}
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      # Connects to the postgres service using its service name as hostname
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-micro_savings_hub}?sslmode=disable
+      # JWT_SECRET must be set in your .env file — no default for security
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  # Isolated bridge network so services can reach each other by name
+  app-network:
+    driver: bridge
+
+volumes:
+  # Named volume for PostgreSQL data persistence
+  pgdata:
