@@ -52,11 +52,21 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d micro_savings_hub_test -f db/init.sql
 
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/micro_savings_hub_test?sslmode=disable
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: 1d
+        run: npm test
+
       - name: Verify backend starts
         working-directory: backend
         env:
           PORT: 5001
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/micro_savings_hub_test
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/micro_savings_hub_test?sslmode=disable
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: 1d
         run: |
           node app.js &
           sleep 3
