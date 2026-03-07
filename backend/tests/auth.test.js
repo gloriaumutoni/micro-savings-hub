@@ -13,7 +13,7 @@ describe('POST /api/auth/register', () => {
       email: testEmail,
       password: testPassword,
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(201);
     expect(res.body.data).toHaveProperty('id');
     expect(res.body.data).toHaveProperty('email', testEmail);
     expect(res.body.data).not.toHaveProperty('password_hash');
