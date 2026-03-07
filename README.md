@@ -253,13 +253,13 @@ ci: uncomment lint step in CI workflow
 
 **4 failed run (then fixed):**
 
-- Failed run: (https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808182770) (intentional test failure to prove CI blocks merge)
-- Fix commit: <link>
-- Passing run after fix: <link>
+- Failed run: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808182770 (intentional test failure to prove CI blocks merge)
+- Fix commit: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264133
+- Passing run after fix: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264907
 
 ### Pull request evidence
 
-- PR showing CI + code review: <link>
+- PR showing CI + code review: https://github.com/gloriaumutoni/micro-savings-hub/pull/30
 
 ---
 
