@@ -243,6 +243,26 @@ ci: uncomment lint step in CI workflow
 !(rules set)[docs/images/branch_protection_1.png]
 !(rules set)[docs/images/branch_protection_2.png]
 
+### CI evidence
+
+**3 successful runs:**
+
+- Run 1: <link>
+- Run 2: <link>
+- Run 3: <link>
+
+**1 failed run (then fixed):**
+
+- Failed run: <link> (reason: <brief reason>)
+- Fix commit: <link>
+- Passing run after fix: <link>
+
+### Pull request evidence
+
+- PR showing CI + code review: <link>
+
+---
+
 ## Links
 
 - [Project Board](https://github.com/gloriaumutoni/micro-savings-hub/projects)
