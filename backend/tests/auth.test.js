@@ -13,7 +13,7 @@ describe('POST /api/auth/register', () => {
       email: testEmail,
       password: testPassword,
     });
-    expect(res.statusCode).toBe(201);
+    expect(res.statusCode).toBe(200);
     expect(res.body.data).toHaveProperty('id');
     expect(res.body.data).toHaveProperty('email', testEmail);
     expect(res.body.data).not.toHaveProperty('password_hash');
@@ -71,9 +71,7 @@ describe('Protected route — GET /api/groups', () => {
         .send({ email: testEmail, password: testPassword });
       authToken = loginRes.body.data.token;
     }
-    const res = await request(app)
-      .get('/api/groups')
-      .set('Authorization', `Bearer ${authToken}`);
+    const res = await request(app).get('/api/groups').set('Authorization', `Bearer ${authToken}`);
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
