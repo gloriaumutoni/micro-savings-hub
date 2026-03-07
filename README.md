@@ -1,4 +1,4 @@
-# AfrikaSave — micro-savings-hub
+# Micro-savings-hub
 
 > Empowering Community Savings Across Africa
 
