@@ -17,11 +17,11 @@ This creates real problems: contributions go unrecorded, totals are disputed, an
 
 ## Team Members
 
-| Name | GitHub | Role |
-|------|--------|------|
+| Name           | GitHub                                             | Role                          |
+| -------------- | -------------------------------------------------- | ----------------------------- |
 | Gloria Umutoni | [@gloriaumutoni](https://github.com/gloriaumutoni) | Team Lead / Backend Developer |
-| Josue Ahadi | [@josueahadi](https://github.com/josueahadi) | DevOps Engineer |
-| Chartine | [@Chartine02](https://github.com/Chartine02) | Frontend Developer |
+| Josue Ahadi    | [@josueahadi](https://github.com/josueahadi)       | DevOps Engineer               |
+| Chartine       | [@Chartine02](https://github.com/Chartine02)       | Frontend Developer            |
 
 ---
 
@@ -71,9 +71,9 @@ Security and transparency are first-class concerns. Every contribution is record
 
 - Node.js 22+
 - npm 10+
-- A [Neon](https://neon.tech) account (free) — used as the shared PostgreSQL database
+- PostgreSQL 17 — via [Neon](https://neon.tech) (free cloud) or Docker Compose (local)
 
-### Installation
+### Option A — Run locally with Node.js
 
 **1. Clone the repository**
 
@@ -87,10 +87,16 @@ cd micro-savings-hub
 ```bash
 cd backend
 cp .env.example .env
-# Paste the shared Neon DATABASE_URL into .env
+# Edit .env — add your DATABASE_URL and a strong JWT_SECRET
 ```
 
-**3. Run the backend**
+**3. Initialise the database**
+
+```bash
+psql "$DATABASE_URL" -f db/init.sql
+```
+
+**4. Start the server**
 
 ```bash
 npm install
@@ -98,7 +104,23 @@ npm run dev
 # API available at http://localhost:5000
 ```
 
-### Usage
+### Option B — Run with Docker Compose
+
+```bash
+# 1. Create a .env file at the project root
+cp backend/.env.example .env
+# Edit .env — set JWT_SECRET (DATABASE_URL is overridden by compose)
+
+# 2. Start all services (postgres + backend)
+docker compose up
+
+# 3. Tear down and remove volumes
+docker compose down -v
+```
+
+The postgres schema is applied automatically on first start.
+
+### Quick API Test
 
 **Health check**
 
@@ -106,29 +128,36 @@ npm run dev
 curl http://localhost:5000/health
 ```
 
-**Create a savings group**
+**Register and log in**
 
 ```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "alice@example.com", "password": "secret123"}'
+
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "alice@example.com", "password": "secret123"}'
+# → { "data": { "token": "..." } }
+```
+
+**Use the token on protected routes**
+
+```bash
+TOKEN="<paste token here>"
+
+# Create a group
 curl -X POST http://localhost:5000/api/groups \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Ibimina Youth Collective", "description": "Monthly savings for school fees", "targetAmount": 500000, "currency": "RWF"}'
+  -d '{"name": "Ibimina Youth Collective", "targetAmount": 500000, "currency": "RWF"}'
+
+# List your groups
+curl http://localhost:5000/api/groups \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-**Add a contribution**
-
-```bash
-curl -X POST http://localhost:5000/api/groups/<group-id>/contribute \
-  -H "Content-Type: application/json" \
-  -d '{"memberName": "Gloria", "amount": 20000}'
-```
-
-**View group summary**
-
-```bash
-curl http://localhost:5000/api/groups/<group-id>
-```
-
-> Frontend setup instructions will be added once scaffolded.
+> See [backend/README.md](./backend/README.md) for the full API reference with curl examples for every endpoint.
 
 ---
 
@@ -138,28 +167,48 @@ curl http://localhost:5000/api/groups/<group-id>
 micro-savings-hub/
 ├── .github/
 │   ├── workflows/
-│   │   └── ci.yml                  # CI pipeline
+│   │   └── ci.yml                    # CI pipeline
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
-│   │   └── feature_request.md
+│   │   └── task.md
 │   ├── CODEOWNERS
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   └── db.js               # PostgreSQL connection pool
+│   │   │   └── db.js                 # PostgreSQL connection pool
 │   │   ├── controllers/
-│   │   │   └── groups.controller.js
+│   │   │   ├── auth.controller.js
+│   │   │   ├── groups.controller.js
+│   │   │   └── admin.controller.js
 │   │   ├── middleware/
+│   │   │   ├── authenticate.js       # JWT verification
+│   │   │   ├── authorize.js          # Role / ownership guards
 │   │   │   └── errorHandler.js
 │   │   ├── routes/
-│   │   │   └── groups.routes.js
+│   │   │   ├── auth.routes.js
+│   │   │   ├── groups.routes.js
+│   │   │   └── admin.routes.js
 │   │   └── services/
-│   │       └── groups.service.js   # Business logic + SQL
+│   │       ├── auth.service.js
+│   │       ├── groups.service.js     # Business logic + SQL
+│   │       └── admin.service.js
 │   ├── db/
-│   │   └── init.sql                # Database schema
+│   │   └── init.sql                  # Database schema (5 tables)
+│   ├── tests/
+│   │   ├── auth.test.js
+│   │   └── groups.test.js
+│   ├── Dockerfile
 │   ├── app.js
 │   └── package.json
+├── frontend/                         # React 19 + TypeScript + Vite 6
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── types/
+│   └── package.json
+├── docker-compose.yml
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -227,6 +276,39 @@ ci: uncomment lint step in CI workflow
 3. Request a review from at least one team member.
 4. All CI checks must pass before merging.
 5. The reviewer merges after approval — do not self-merge.
+
+---
+
+## Formative 2 — Part 3: Integration & Evidence
+
+### Branch protection (main)
+
+- Require PR before merge
+- Require 1 approval
+- Require CI checks to pass
+- Require branch to be up to date
+
+**Screenshot of the rules set:**
+!(rules set)[docs/images/branch_protection_1.png]
+!(rules set)[docs/images/branch_protection_2.png]
+
+### CI evidence
+
+**3 successful runs:**
+
+- Run 1: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807904494)
+- Run 2: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807962380)
+- Run 3: [Creating PR](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807996726)
+
+**4 failed run (then fixed):**
+
+- Failed run: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808182770 (intentional test failure to prove CI blocks merge)
+- Fix commit: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264133
+- Passing run after fix: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264907
+
+### Pull request evidence
+
+- PR showing CI + code review: https://github.com/gloriaumutoni/micro-savings-hub/pull/30
 
 ---
 
