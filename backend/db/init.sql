@@ -1,5 +1,5 @@
 -- AfrikaSave database schema
--- Run once against your Neon database:
+-- Run once against the Neon database:
 --   psql "<DATABASE_URL>" -f backend/db/init.sql
 
 -- Drop tables in reverse dependency order (safe for re-runs)
