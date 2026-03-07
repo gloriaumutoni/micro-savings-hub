@@ -6,7 +6,6 @@ const express = require('express');
 const cors = require('cors');
 const authRouter = require('./src/routes/auth.routes');
 const groupsRouter = require('./src/routes/groups.routes');
-const adminRouter = require('./src/routes/admin.routes');
 const { notFound, errorHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
@@ -25,7 +24,6 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/groups', groupsRouter);
-app.use('/api/admin', adminRouter);
 
 app.use(notFound);
 app.use(errorHandler);
