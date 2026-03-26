@@ -54,7 +54,7 @@ Security and transparency are first-class concerns. Every contribution is record
 
 | Layer               | Technology                   |
 | ------------------- | ---------------------------- |
-| **Backend**         | Node.js 22, Express 5        |
+| **Backend**         | Node.js 24, Express 5        |
 | **Database**        | PostgreSQL 17                |
 | **Frontend**        | React 19, TypeScript, Vite 6 |
 | **Styling**         | Tailwind CSS v4              |
@@ -69,7 +69,7 @@ Security and transparency are first-class concerns. Every contribution is record
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js 24+
 - npm 10+
 - PostgreSQL 17 — via [Neon](https://neon.tech) (free cloud) or Docker Compose (local)
 

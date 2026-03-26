@@ -6,7 +6,7 @@ REST API for the AfrikaSave community savings platform. Built with Node.js 22, E
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 24+
 - npm 10+
 - PostgreSQL 17 (or a [Neon](https://neon.tech) free account)
 
