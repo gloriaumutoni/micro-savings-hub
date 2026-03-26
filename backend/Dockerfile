@@ -1,5 +1,5 @@
 # Stage 1: Install production dependencies only
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # Stage 2: Final image — clean, non-root, minimal
-FROM node:22-alpine
+FROM node:24-alpine
 
 # Create a non-root user and group for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
