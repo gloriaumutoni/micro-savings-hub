@@ -73,3 +73,6 @@ Desktop.ini
 .cache/
 tmp/
 temp/
+
+# Local docs
+USER_STORIES.md

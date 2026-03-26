@@ -18,6 +18,7 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_USER: postgres
+          # Not a secret — this is a throwaway container that exists only for the duration of the CI run and holds no real data. Destroyed after every run.
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: micro_savings_hub_test
         ports:
@@ -53,14 +54,15 @@ jobs:
       - name: Run database migrations
         working-directory: backend
         env:
-          PGPASSWORD: postgres
+          PGPASSWORD: postgres # matches the throwaway CI container password above
         run: psql -h localhost -U postgres -d micro_savings_hub_test -f db/init.sql
 
       - name: Run backend tests
         working-directory: backend
         env:
+          # 127.0.0.1 used instead of localhost — pg resolves localhost to ::1 (IPv6) first, which the container does not listen on. sslmode=disable — no SSL for local containers.
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/micro_savings_hub_test?sslmode=disable
-          JWT_SECRET: test_secret
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: 1d
         run: npm test
 
@@ -69,7 +71,7 @@ jobs:
         env:
           PORT: 5001
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/micro_savings_hub_test?sslmode=disable
-          JWT_SECRET: test_secret
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: 1d
         run: |
           node app.js &
@@ -95,14 +97,27 @@ jobs:
         working-directory: frontend
 
   docker:
-    name: Docker — Build Image
+    name: Docker — Build & Push to GHCR
     runs-on: ubuntu-latest
     needs: [backend, frontend]
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - name: Build Docker image
-        run: |
-          docker build \
-            --tag micro-savings-hub:${{ github.sha }} \
-            --tag micro-savings-hub:latest \
-            ./backend
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/micro-savings-hub:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/micro-savings-hub:latest

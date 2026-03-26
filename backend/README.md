@@ -57,7 +57,25 @@ Or use Docker Compose from the project root — see the [root README](../README.
 npm test
 ```
 
-Tests use the database pointed to by `DATABASE_URL`. For CI a local postgres container is used.
+Tests are integration tests — they run real SQL queries against a real PostgreSQL database rather than mocking the DB layer. This means they catch issues that mocks would miss, such as broken foreign key constraints, wrong column names, or transactions that don't behave as expected.
+
+**Locally:** point `DATABASE_URL` in your `.env` at any PostgreSQL 17 database (Neon or local). The test suite will use whatever database that URL points to.
+
+**In CI:** the GitHub Actions workflow spins up a fresh, empty postgres container for each run. It is seeded from `db/init.sql`, used for the duration of the run, then destroyed. Because it holds no real data, its credentials (`postgres/postgres`) are not sensitive. Every CI run starts from a clean slate, making test results deterministic regardless of what ran before.
+
+---
+
+## CI Setup — Required GitHub Secrets
+
+The CI pipeline requires one secret to be added manually. Go to **GitHub → Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Description | How to generate |
+|--------|-------------|-----------------|
+| `JWT_SECRET` | Signs and verifies JWTs during CI test runs | `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+
+`GITHUB_TOKEN` is automatically provided by GitHub on every run — no action needed.
+
+All other CI values (`DATABASE_URL`, `PGPASSWORD`, `JWT_EXPIRES_IN`) are hardcoded in the workflow because they reference the throwaway postgres container, which holds no real data and is destroyed after each run.
 
 ---
 
