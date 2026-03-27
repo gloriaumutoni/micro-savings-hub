@@ -76,6 +76,7 @@ temp/
 
 # Local docs
 USER_STORIES.md
+detailed_instructions.md
 
 # ===========================
 # Terraform
