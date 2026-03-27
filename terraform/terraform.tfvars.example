@@ -1,0 +1,19 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is git-ignored — never commit it.
+
+aws_region   = "eu-west-1"
+project_name = "afrikasave"
+
+# SSH public key — paste the contents of ~/.ssh/id_rsa.pub (or your deploy key)
+ssh_public_key = "ssh-rsa AAAA..."
+
+# RDS credentials — use a strong password
+db_password = "change-me-to-a-strong-password"
+
+# Optional overrides (defaults are fine for most deployments)
+# instance_type         = "t2.micro"
+# db_instance_class     = "db.t3.micro"
+# db_name               = "micro_savings_hub"
+# db_username           = "appuser"
+# availability_zone     = "eu-west-1a"
+# availability_zone_b   = "eu-west-1b"
