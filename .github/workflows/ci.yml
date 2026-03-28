@@ -143,12 +143,13 @@ jobs:
           load: true
           tags: micro-savings-hub-backend:ci
 
-      - name: Trivy — scan backend image (fail on CRITICAL)
+      - name: Trivy — scan backend image (fail on CRITICAL or HIGH)
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: micro-savings-hub-backend:ci
-          severity: CRITICAL
+          severity: HIGH,CRITICAL
           exit-code: "1"
+          ignore-unfixed: true
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -171,12 +172,13 @@ jobs:
           load: true
           tags: micro-savings-hub-frontend:ci
 
-      - name: Trivy — scan frontend image (fail on CRITICAL)
+      - name: Trivy — scan frontend image (fail on CRITICAL or HIGH)
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: micro-savings-hub-frontend:ci
-          severity: CRITICAL
+          severity: HIGH,CRITICAL
           exit-code: "1"
+          ignore-unfixed: true
 
       - name: Tag and push frontend image to GHCR
         run: |
