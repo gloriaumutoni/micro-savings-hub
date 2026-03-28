@@ -139,7 +139,7 @@ resource "aws_route_table_association" "private_b" {
 # SECURITY GROUPS
 # ─────────────────────────────────────────────
 
-# Bastion Host SG — SSH open from the internet so operators can jump in
+# Bastion Host SG — SSH and HTTP from internet (SSH jump + Nginx reverse proxy)
 resource "aws_security_group" "bastion" {
   name        = "${var.project_name}-bastion-sg"
   description = "Allow SSH inbound from internet; all outbound"
@@ -149,6 +149,14 @@ resource "aws_security_group" "bastion" {
     description = "SSH from anywhere - intentional for a bastion host"
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-ingress-sgr
+  }
+
+  ingress {
+    description = "HTTP from internet - Nginx reverse proxy to App VM"
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-ingress-sgr
   }
@@ -165,7 +173,7 @@ resource "aws_security_group" "bastion" {
   }
 }
 
-# App VM SG — SSH only from Bastion; API port from internet
+# App VM SG — SSH and HTTP from Bastion only; never directly from internet
 resource "aws_security_group" "app" {
   name        = "${var.project_name}-app-sg"
   description = "SSH from Bastion only; HTTP 5000 from internet"
@@ -180,11 +188,11 @@ resource "aws_security_group" "app" {
   }
 
   ingress {
-    description = "HTTP API traffic from internet"
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP from Bastion reverse proxy only"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
   }
 
   egress {
@@ -238,7 +246,7 @@ resource "aws_key_pair" "deployer" {
 # COMPUTE
 # ─────────────────────────────────────────────
 
-# Bastion Host — sits in the public subnet, acts as the SSH jump server
+# Bastion Host — sits in the public subnet, acts as SSH jump server and reverse proxy
 resource "aws_instance" "bastion" {
   ami                         = var.ami_id
   instance_type               = var.instance_type
@@ -250,6 +258,18 @@ resource "aws_instance" "bastion" {
   tags = {
     Name = "${var.project_name}-bastion"
   }
+}
+
+# Elastic IP — gives the Bastion a stable public IP (the live application URL)
+resource "aws_eip" "bastion" {
+  instance = aws_instance.bastion.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "${var.project_name}-bastion-eip"
+  }
+
+  depends_on = [aws_internet_gateway.igw]
 }
 
 # App VM — private subnet, never directly reachable from the internet
@@ -363,15 +383,27 @@ resource "aws_ecr_repository" "app" {
   }
 
   tags = {
-    Name = "${var.project_name}-ecr"
+    Name = "${var.project_name}-ecr-backend"
   }
 }
 
-# Lifecycle policy — expire untagged images daily, keep last 10 tagged releases
-resource "aws_ecr_lifecycle_policy" "app" {
-  repository = aws_ecr_repository.app.name
+# Separate ECR repository for the frontend Nginx image
+resource "aws_ecr_repository" "frontend" {
+  name                 = "micro-savings-hub-frontend"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
-  policy = jsonencode({
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "${var.project_name}-ecr-frontend"
+  }
+}
+
+locals {
+  ecr_lifecycle_policy = jsonencode({
     rules = [
       {
         rulePriority = 1
@@ -396,4 +428,16 @@ resource "aws_ecr_lifecycle_policy" "app" {
       }
     ]
   })
+}
+
+# Lifecycle policy — expire untagged images daily, keep last 10 tagged releases
+resource "aws_ecr_lifecycle_policy" "app" {
+  repository = aws_ecr_repository.app.name
+
+  policy = local.ecr_lifecycle_policy
+}
+
+resource "aws_ecr_lifecycle_policy" "frontend" {
+  repository = aws_ecr_repository.frontend.name
+  policy     = local.ecr_lifecycle_policy
 }
