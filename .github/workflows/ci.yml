@@ -97,10 +97,23 @@ jobs:
       - run: npm run build
         working-directory: frontend
 
+  tfsec:
+    name: IaC — tfsec (Terraform)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec on terraform/
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+
   docker:
     name: Docker — Build & Push to GHCR
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, frontend, tfsec]
     permissions:
       contents: read
       packages: write
