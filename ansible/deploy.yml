@@ -1,0 +1,211 @@
+---
+- name: Deploy AfrikaSave backend to production
+  hosts: app_server
+  become: yes
+
+  vars:
+    ecr_registry: "{{ lookup('env', 'ECR_REGISTRY') }}"
+    ecr_backend_repository: "{{ lookup('env', 'ECR_BACKEND_REPOSITORY') }}"
+    ecr_frontend_repository: "{{ lookup('env', 'ECR_FRONTEND_REPOSITORY') }}"
+    image_tag: "{{ lookup('env', 'IMAGE_TAG') | default('latest', true) }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') | default('eu-west-1', true) }}"
+    app_dir: /opt/afrikasave
+
+  tasks:
+    # ── System packages ──────────────────────────────────────────────────────
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required system packages
+      apt:
+        name:
+          - curl
+          - git
+          - unzip
+          - ca-certificates
+          - gnupg
+          - lsb-release
+        state: present
+
+    # ── Docker ───────────────────────────────────────────────────────────────
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker apt repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker Engine and Compose plugin
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    # ── AWS CLI ───────────────────────────────────────────────────────────────
+
+    - name: Check if AWS CLI is installed
+      command: aws --version
+      register: aws_cli_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Download AWS CLI v2 installer
+      get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscliv2.zip
+      when: aws_cli_check.rc != 0
+
+    - name: Unzip AWS CLI installer
+      unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp/
+        remote_src: yes
+      when: aws_cli_check.rc != 0
+
+    - name: Install AWS CLI v2
+      command: /tmp/aws/install
+      when: aws_cli_check.rc != 0
+
+    - name: Clean up AWS CLI installer files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/awscliv2.zip
+        - /tmp/aws
+      when: aws_cli_check.rc != 0
+
+    # ── ECR authentication ────────────────────────────────────────────────────
+
+    - name: Authenticate Docker to ECR
+      # The App VM's IAM instance profile grants ECR read access — no keys needed
+      shell: >
+        aws ecr get-login-password --region {{ aws_region }} |
+        docker login --username AWS --password-stdin {{ ecr_registry }}
+      changed_when: false
+
+    # ── Application deployment ────────────────────────────────────────────────
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Copy docker-compose.prod.yml to App VM
+      copy:
+        src: ../docker-compose.prod.yml
+        dest: "{{ app_dir }}/docker-compose.prod.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    - name: Pull latest backend image from ECR
+      shell: docker pull {{ ecr_registry }}/{{ ecr_backend_repository }}:{{ image_tag }}
+      changed_when: true
+
+    - name: Pull latest frontend image from ECR
+      shell: docker pull {{ ecr_registry }}/{{ ecr_frontend_repository }}:{{ image_tag }}
+      changed_when: true
+
+    - name: Deploy application with Docker Compose
+      shell: >
+        IMAGE_TAG={{ image_tag }}
+        ECR_REGISTRY={{ ecr_registry }}
+        ECR_BACKEND_REPOSITORY={{ ecr_backend_repository }}
+        ECR_FRONTEND_REPOSITORY={{ ecr_frontend_repository }}
+        docker compose -f {{ app_dir }}/docker-compose.prod.yml up -d --pull always --remove-orphans
+      environment:
+        DATABASE_URL: "{{ lookup('env', 'DATABASE_URL') }}"
+        JWT_SECRET: "{{ lookup('env', 'JWT_SECRET') }}"
+        JWT_EXPIRES_IN: "{{ lookup('env', 'JWT_EXPIRES_IN') | default('7d', true) }}"
+      changed_when: true
+
+    - name: Verify application is healthy via Nginx
+      uri:
+        url: http://localhost:80/health
+        method: GET
+        status_code: 200
+      retries: 5
+      delay: 5
+      register: health_check
+      until: health_check.status == 200
+
+# ── Bastion reverse proxy ─────────────────────────────────────────────────────
+# The App VM is in a private subnet with no public IP.
+# Nginx on the Bastion forwards port 80 traffic to the App VM's private IP.
+
+- name: Configure Bastion as Nginx reverse proxy
+  hosts: bastion
+  become: yes
+
+  vars:
+    app_vm_private_ip: "{{ lookup('env', 'APP_VM_HOST') }}"
+
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Write Nginx reverse proxy config
+      copy:
+        dest: /etc/nginx/sites-available/afrikasave
+        content: |
+          server {
+              listen 80;
+              server_name _;
+
+              location / {
+                  proxy_pass http://{{ app_vm_private_ip }}:80;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              }
+          }
+        mode: "0644"
+
+    - name: Enable site
+      file:
+        src: /etc/nginx/sites-available/afrikasave
+        dest: /etc/nginx/sites-enabled/afrikasave
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Reload Nginx
+      systemd:
+        name: nginx
+        state: reloaded
+        enabled: yes
