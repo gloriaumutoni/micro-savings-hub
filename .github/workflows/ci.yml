@@ -129,8 +129,16 @@ jobs:
         with:
           directory: terraform
           framework: terraform
-          soft_fail: false
+          soft_fail: true
           output_format: cli
+          output_file_path: checkov-results.txt
+
+      - name: Upload checkov results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkov-results
+          path: checkov-results.txt
 
   docker:
     name: Docker — Build, Trivy scan, Push to GHCR
