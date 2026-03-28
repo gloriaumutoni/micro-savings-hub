@@ -7,8 +7,6 @@ on:
   pull_request:
     branches:
       - main
-  # Lets the CD workflow run the same checks on main before deploy
-  workflow_call:
 jobs:
   backend:
     name: Backend — Lint & Test
