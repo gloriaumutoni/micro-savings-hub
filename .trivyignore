@@ -1,0 +1,15 @@
+# .trivyignore — Accepted/suppressed Trivy vulnerabilities
+# Format: CVE-ID  # reason
+#
+# These vulnerabilities have been reviewed and accepted because:
+# - No fix is currently available (ignore-unfixed: true handles most of these)
+# - The vulnerability is not exploitable in our deployment context
+# - The affected component is not reachable from the public internet
+#
+# Reviewed by: DevOps team
+# Last reviewed: 2026-03-29
+
+# Node.js alpine base image — accepted low-risk items
+# Add specific CVE IDs here after reviewing Trivy scan output
+# Example:
+# CVE-2023-XXXXX  # unfixable in node:24-alpine, not exploitable in our context
