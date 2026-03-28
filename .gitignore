@@ -86,3 +86,9 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/terraform.tfvars
 terraform/.terraform.lock.hcl
+
+# Trivy and security scan output files
+*.sarif
+trivy-*.sarif
+tfsec.sarif
+checkov-results.txt
