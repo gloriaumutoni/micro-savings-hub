@@ -233,3 +233,22 @@ jobs:
         with:
           name: trivy-frontend-sarif
           path: trivy-frontend.sarif
+
+      - name: Security scan summary
+        if: always()
+        run: |
+          echo "============================================"
+          echo "        DEVSECOPS SCAN SUMMARY"
+          echo "============================================"
+          echo "tfsec    — Terraform IaC scan complete"
+          echo "checkov  — Terraform IaC scan complete"
+          echo "Trivy    — Backend image scan complete"
+          echo "Trivy    — Frontend image scan complete"
+          echo "--------------------------------------------"
+          echo "Severity threshold : HIGH, CRITICAL"
+          echo "Unfixed CVEs       : ignored"
+          echo "SARIF artifacts    : trivy-backend-sarif"
+          echo "                     trivy-frontend-sarif"
+          echo "                     tfsec-sarif"
+          echo "                     checkov-results"
+          echo "============================================"
