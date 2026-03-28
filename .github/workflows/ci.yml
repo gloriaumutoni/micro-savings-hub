@@ -107,6 +107,15 @@ jobs:
         with:
           working_directory: terraform
           soft_fail: false
+          format: sarif
+          sarif_file: tfsec.sarif
+
+      - name: Upload tfsec SARIF results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tfsec-sarif
+          path: tfsec.sarif
 
   checkov:
     name: IaC — checkov (Terraform)
