@@ -108,6 +108,21 @@ jobs:
           working_directory: terraform
           soft_fail: false
 
+  checkov:
+    name: IaC — checkov (Terraform)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run checkov on terraform/
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: false
+          output_format: cli
+
   docker:
     name: Docker — Build, Trivy scan, Push to GHCR
     runs-on: ubuntu-latest
