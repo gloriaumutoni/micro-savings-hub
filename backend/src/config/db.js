@@ -2,14 +2,19 @@
 
 const { Pool } = require('pg');
 
-const ssl = process.env.DATABASE_URL?.includes('sslmode=disable')
-  ? false
-  : { rejectUnauthorized: false };
+function buildPoolConfig(databaseUrl) {
+  if (!databaseUrl) return {};
+  const url = new URL(databaseUrl);
+  const useSSL = url.searchParams.get('sslmode') !== 'disable';
+  url.searchParams.delete('sslmode');
+  url.searchParams.delete('channel_binding');
+  return {
+    connectionString: url.toString(),
+    ssl: useSSL ? { rejectUnauthorized: false } : false,
+  };
+}
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl,
-});
+const pool = new Pool(buildPoolConfig(process.env.DATABASE_URL));
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle pg client', err);
