@@ -162,7 +162,7 @@ jobs:
           tags: micro-savings-hub-backend:ci
 
       - name: Trivy — scan backend image (fail on HIGH or CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           image-ref: micro-savings-hub-backend:ci
           severity: HIGH,CRITICAL
@@ -172,7 +172,7 @@ jobs:
           output: trivy-backend.sarif
 
       - name: Trivy — scan backend image (table summary)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           image-ref: micro-savings-hub-backend:ci
           severity: HIGH,CRITICAL
@@ -209,7 +209,7 @@ jobs:
           tags: micro-savings-hub-frontend:ci
 
       - name: Trivy — scan frontend image (fail on HIGH or CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           image-ref: micro-savings-hub-frontend:ci
           severity: HIGH,CRITICAL
@@ -219,7 +219,7 @@ jobs:
           output: trivy-frontend.sarif
 
       - name: Trivy — scan frontend image (table summary)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           image-ref: micro-savings-hub-frontend:ci
           severity: HIGH,CRITICAL
