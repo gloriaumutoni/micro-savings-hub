@@ -1,214 +1,131 @@
-# Micro-savings-hub
+# AfrikaSave — Micro-Savings Hub
 
 > Empowering Community Savings Across Africa
 
-![CI](https://github.com/gloriaumutoni/micro-savings-hub/actions/workflows/ci.yml/badge.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-
----
-
-## African Context
-
-Across Africa, informal savings groups — known as _tontines_ in West Africa, _chamas_ in Kenya, and _ibimina_ in Rwanda — are a cornerstone of community finance. Millions of people pool money weekly or monthly to support one another, yet these groups rely on handwritten ledgers, cash in envelopes, and verbal agreements.
-
-This creates real problems: contributions go unrecorded, totals are disputed, and trust breaks down. AfrikaSave digitises the entire process — making every contribution transparent, every group traceable, and every member accountable — with no bank account required.
+[![CI](https://github.com/gloriaumutoni/micro-savings-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/gloriaumutoni/micro-savings-hub/actions/workflows/ci.yml)
+[![CD](https://github.com/gloriaumutoni/micro-savings-hub/actions/workflows/cd.yml/badge.svg)](https://github.com/gloriaumutoni/micro-savings-hub/actions/workflows/cd.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 ---
 
 ## Team Members
 
-| Name           | GitHub                                             | Role                          |
-| -------------- | -------------------------------------------------- | ----------------------------- |
-| Gloria Umutoni | [@gloriaumutoni](https://github.com/gloriaumutoni) | Team Lead / Backend Developer |
-| Josue Ahadi    | [@josueahadi](https://github.com/josueahadi)       | DevOps Engineer               |
-| Chartine       | [@Chartine02](https://github.com/Chartine02)       | Frontend Developer            |
+- **Gloria Umutoni** [@gloriaumutoni](https://github.com/gloriaumutoni) — Role: CI / Security
+- **Josue Ahadi** [@josueahadi](https://github.com/josueahadi) — Role: Terraform / IaC
+- **Chartine** [@Chartine02](https://github.com/Chartine02) — Role: Ansible / CD
 
 ---
 
-## Project Overview
+## Live Application
 
-AfrikaSave is a community-focused fintech platform that digitises savings groups for African communities. It provides a simple API and web interface for creating groups, recording contributions, and tracking collective progress toward a savings goal.
+[Access Live App](http://54.76.216.109)
 
-The platform is designed with a microservices-ready architecture: the backend API handles all business logic and data persistence, while the frontend React application consumes it. Both services are independently runnable and independently deployable — a foundation that naturally evolves into separate containerised services in later phases.
+> The Bastion Host's Nginx reverse-proxies port 80 to the App VM in the private subnet. The App VM has no public IP — all traffic enters through the bastion's Elastic IP.
 
-Security and transparency are first-class concerns. Every contribution is recorded with a timestamp and member name, group totals are updated atomically via database transactions, and no money is ever stored — AfrikaSave is a record-keeping and accountability tool, not a payment processor.
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Backend liveness check |
+| `POST /api/auth/register` | Create a new user account |
+| `POST /api/auth/login` | Login and receive a JWT |
+| `GET /api/groups` | List your savings groups (auth required) |
+| `POST /api/groups` | Create a savings group (auth required) |
 
-### Target Users
+---
 
-- Community savings groups (tontines, chamas, ibimina)
-- Youth savings collectives and university clubs
-- Small business associations pooling capital
-- Rural financial cooperatives with no formal banking access
+## Architecture Overview
 
-### Core Features
+### Architecture Diagram
 
-- **Create a Savings Group** — name, description, target amount, and currency
-- **Join & Contribute** — record a simulated contribution linked to a member name
-- **Live Group Summary** — view total saved, progress toward goal, and full contribution history
-- **Multi-currency Support** — RWF, KES, UGX, NGN, GHS, USD and more
-- **Transparent Ledger** — every contribution is timestamped and immutable
+![Architecture Diagram](docs/images/architecture.png)
+
+### Component Description
+
+**Bastion Host (EC2 t3.micro — public subnet)**
+The single public entry point for both end-user traffic and operator SSH access. Nginx reverse-proxies HTTP port 80 to the App VM's private IP. All SSH sessions to the App VM jump through the bastion via `ProxyJump`.
+
+**App VM (EC2 t3.micro — private subnet)**
+Runs `docker-compose.prod.yml` with two containers: the React/Nginx frontend and the Node.js/Express backend. Has no public IP — reachable only via the bastion. An IAM instance profile grants it read-only ECR access so Docker can pull images without stored credentials.
+
+**RDS PostgreSQL 17 (private subnets)**
+Managed database spanning two private subnets (required by RDS subnet groups). Only the App VM's security group is allowed inbound on port 5432.
+
+**ECR Private Registry**
+Two repositories — `afrikasave-backend` and `afrikasave-frontend` — provisioned by Terraform with lifecycle policies. Images are tagged with the commit SHA for traceability and `:latest` for convenience.
+
+**GitHub Actions CI/CD**
+CI runs on every branch push and PR, blocking merge on any lint, test, or security failure. CD triggers on merge to `main`, re-runs all gates, pushes both images to ECR, then uses Ansible over SSH to deploy.
+
+**Security controls in place**
+- App VM and RDS are in private subnets with no internet-facing ports
+- Security groups follow least-privilege: bastion accepts :80/:22 from anywhere; App VM accepts :80/:22 only from the bastion SG; RDS accepts :5432 only from the App VM SG
+- All SSH access uses key-pair authentication — no passwords
+- IAM instance profile on App VM: ECR read-only, no static credentials
+- Secrets injected at runtime via GitHub Secrets — never stored in the repository
+- Trivy, tfsec, and checkov block merge on HIGH/CRITICAL findings
 
 ---
 
 ## Technology Stack
 
-| Layer               | Technology                   |
-| ------------------- | ---------------------------- |
-| **Backend**         | Node.js 24, Express 5        |
-| **Database**        | PostgreSQL 17                |
-| **Frontend**        | React 19, TypeScript, Vite 6 |
-| **Styling**         | Tailwind CSS v4              |
-| **HTTP Client**     | Axios                        |
-| **Routing**         | React Router v7              |
-| **CI/CD**           | GitHub Actions               |
-| **Version Control** | Git / GitHub                 |
+- **Cloud Provider:** AWS (VPC, EC2, RDS, ECR, IAM, EIP, NAT Gateway)
+- **Application:** Node.js 24 / Express 5 (backend), React 19 / Vite 7 / TypeScript (frontend)
+- **Database:** PostgreSQL 17 (RDS)
+- **Container Registry:** AWS ECR (private)
+- **IaC:** Terraform ~> 1.14 (AWS provider ~> 6.0)
+- **Config Management:** Ansible
+- **CI/CD:** GitHub Actions
+- **Security Scanning:** tfsec (Terraform), checkov (Terraform), Trivy (container images)
+- **Reverse Proxy:** Nginx (bastion + frontend container)
+- **Styling:** Tailwind CSS v4
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 24+
-- npm 10+
-- PostgreSQL 17 — via [Neon](https://neon.tech) (free cloud) or Docker Compose (local)
-
-### Option A — Run locally with Node.js
-
-**1. Clone the repository**
-
-```bash
-git clone https://github.com/gloriaumutoni/micro-savings-hub.git
-cd micro-savings-hub
-```
-
-**2. Configure the backend**
-
-```bash
-cd backend
-cp .env.example .env
-# Edit .env — add your DATABASE_URL and a strong JWT_SECRET
-```
-
-**3. Initialise the database**
-
-```bash
-psql "$DATABASE_URL" -f db/init.sql
-```
-
-**4. Start the server**
-
-```bash
-npm install
-npm run dev
-# API available at http://localhost:5000
-```
-
-### Option B — Run with Docker Compose
-
-```bash
-# 1. Create a .env file at the project root
-cp backend/.env.example .env
-# Edit .env — set JWT_SECRET (DATABASE_URL is overridden by compose)
-
-# 2. Start all services (postgres + backend)
-docker compose up
-
-# 3. Tear down and remove volumes
-docker compose down -v
-```
-
-The postgres schema is applied automatically on first start.
-
-### Quick API Test
-
-**Health check**
-
-```bash
-curl http://localhost:5000/health
-```
-
-**Register and log in**
-
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email": "alice@example.com", "password": "secret123"}'
-
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "alice@example.com", "password": "secret123"}'
-# → { "data": { "token": "..." } }
-```
-
-**Use the token on protected routes**
-
-```bash
-TOKEN="<paste token here>"
-
-# Create a group
-curl -X POST http://localhost:5000/api/groups \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Ibimina Youth Collective", "targetAmount": 500000, "currency": "RWF"}'
-
-# List your groups
-curl http://localhost:5000/api/groups \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-> See [backend/README.md](./backend/README.md) for the full API reference with curl examples for every endpoint.
-
----
-
-## Project Structure
+## Repository Structure
 
 ```
 micro-savings-hub/
 ├── .github/
 │   ├── workflows/
-│   │   └── ci.yml                    # CI pipeline
+│   │   ├── ci.yml                    # CI — lint, test, IaC scans, Trivy, GHCR push
+│   │   └── cd.yml                    # CD — re-runs CI, pushes to ECR, deploys via Ansible
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
 │   │   └── task.md
 │   ├── CODEOWNERS
 │   └── PULL_REQUEST_TEMPLATE.md
+├── ansible/
+│   ├── deploy.yml                    # Installs Docker/AWS CLI, ECR auth, docker compose up
+│   └── inventory.ini                 # Bastion + App VM (IPs injected from secrets at deploy time)
+├── terraform/
+│   ├── main.tf                       # VPC, subnets, EC2 ×2, RDS, ECR ×2, IAM, SGs, EIP, NAT
+│   ├── variables.tf                  # All configurable parameters with defaults
+│   ├── outputs.tf                    # bastion_public_ip, app_vm_private_ip, ecr_*_url
+│   ├── terraform.tfvars.example      # Copy → terraform.tfvars, never committed
+│   └── README.md
 ├── backend/
 │   ├── src/
-│   │   ├── config/
-│   │   │   └── db.js                 # PostgreSQL connection pool
-│   │   ├── controllers/
-│   │   │   ├── auth.controller.js
-│   │   │   ├── groups.controller.js
-│   │   │   └── admin.controller.js
-│   │   ├── middleware/
-│   │   │   ├── authenticate.js       # JWT verification
-│   │   │   ├── authorize.js          # Role / ownership guards
-│   │   │   └── errorHandler.js
-│   │   ├── routes/
-│   │   │   ├── auth.routes.js
-│   │   │   ├── groups.routes.js
-│   │   │   └── admin.routes.js
-│   │   └── services/
-│   │       ├── auth.service.js
-│   │       ├── groups.service.js     # Business logic + SQL
-│   │       └── admin.service.js
-│   ├── db/
-│   │   └── init.sql                  # Database schema (5 tables)
-│   ├── tests/
-│   │   ├── auth.test.js
-│   │   └── groups.test.js
-│   ├── Dockerfile
-│   ├── app.js
+│   │   ├── config/db.js              # PostgreSQL connection pool
+│   │   ├── controllers/              # auth, groups, admin
+│   │   ├── middleware/               # JWT auth, role guards, error handler
+│   │   ├── routes/                   # auth, groups, admin
+│   │   └── services/                 # Business logic + SQL queries
+│   ├── db/init.sql                   # Schema — users, groups, members, contributions, goals
+│   ├── tests/                        # Jest + Supertest integration tests
+│   ├── Dockerfile                    # Multi-stage, non-root user, Alpine
+│   ├── .env.example
 │   └── package.json
-├── frontend/                         # React 19 + TypeScript + Vite 6
+├── frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── pages/
-│   │   ├── services/
+│   │   ├── services/                 # Axios API client
 │   │   └── types/
+│   ├── nginx.conf                    # Proxies /api → backend container
+│   ├── Dockerfile                    # Multi-stage Vite build + Nginx serve
 │   └── package.json
-├── docker-compose.yml
+├── docker-compose.yml                # Local dev: postgres + backend
+├── docker-compose.prod.yml           # Production: pulls images from ECR
+├── .trivyignore                      # Accepted CVE exceptions with justifications
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -216,109 +133,240 @@ micro-savings-hub/
 
 ---
 
-## Contributing
+## Setup Instructions
 
-Follow this process to keep the codebase clean and reviewable.
+### Prerequisites
 
-### 1. Create an Issue First
+- **AWS account** with permissions to create VPC, EC2, RDS, ECR, and IAM resources
+- **Terraform** >= 1.14 — [install guide](https://developer.hashicorp.com/terraform/install)
+- **Ansible** >= 2.15 — `pip install ansible`
+- **Docker** and Docker Compose (for local development)
+- **Node.js 24+** and npm 10+ (for local development)
+- An **SSH key pair** for EC2 access: `ssh-keygen -t ed25519 -f ~/.ssh/afrikasave-deploy`
+- A **GitHub account** with access to this repository and permission to add secrets
 
-Before starting work, open an issue using the appropriate template:
+### Deployment Steps
 
-| Template            | When to use                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| **Bug Report**      | Something is broken or behaving unexpectedly                                          |
-| **Feature Request** | You want to propose/add new functionality                                             |
-| **Task**            | Planned work — DevOps, infrastructure, config, or anything that doesn't fit the above |
+#### 1. Clone the repository
 
-Go to **Issues → New Issue** on GitHub and select the matching template.
-
-### 2. Branch Naming
-
-Create a branch from `main` using this convention:
-
-```
-<type>/<short-description>
+```bash
+git clone https://github.com/gloriaumutoni/micro-savings-hub.git
+cd micro-savings-hub
 ```
 
-| Type        | Use for                                   |
-| ----------- | ----------------------------------------- |
-| `feat/`     | New feature                               |
-| `fix/`      | Bug fix                                   |
-| `chore/`    | Maintenance, dependencies, tooling        |
-| `ci/`       | CI/CD changes                             |
-| `docs/`     | Documentation only                        |
-| `refactor/` | Code restructure with no behaviour change |
-| `build/`    | Docker, build system changes              |
+#### 2. Configure Terraform variables
 
-Examples: `feat/user-auth`, `fix/contribution-null-check`, `ci/add-lint-step`
-
-### 3. Commit Messages
-
-Use [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <short summary>
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
 ```
 
-Examples:
+Edit `terraform.tfvars` — the two required values are:
 
-```
-feat(auth): add JWT login endpoint
-fix(groups): handle missing targetAmount gracefully
-chore: update dotenv to v16.4.7
-ci: uncomment lint step in CI workflow
+```hcl
+ssh_public_key = "ssh-ed25519 AAAA..."
+db_password    = "change-me-to-a-strong-password"
 ```
 
-### 4. Open a Pull Request
+#### 3. Initialise and apply Terraform
 
-1. Push your branch and open a PR targeting `main`.
-2. Fill in the PR template — summary, type of change, and testing steps.
-3. Request a review from at least one team member.
-4. All CI checks must pass before merging.
-5. The reviewer merges after approval — do not self-merge.
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+Note the outputs — you will need them for GitHub Secrets:
+
+```bash
+terraform output bastion_public_ip
+terraform output app_vm_private_ip
+terraform output ecr_backend_url
+terraform output ecr_frontend_url
+```
+
+The ECR registry hostname (everything before the first `/` in the ECR URL) goes into `ECR_REGISTRY`.
+
+#### 4. Add GitHub Secrets
+
+Go to **Settings → Secrets and variables → Actions → Secrets** and add:
+
+| Secret | Value |
+|---|---|
+| `JWT_SECRET` | `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+| `AWS_ACCESS_KEY_ID` | IAM deploy user key |
+| `AWS_SECRET_ACCESS_KEY` | IAM deploy user secret |
+| `ECR_REGISTRY` | `<account>.dkr.ecr.<region>.amazonaws.com` |
+| `ECR_BACKEND_REPOSITORY` | e.g. `afrikasave-backend` |
+| `ECR_FRONTEND_REPOSITORY` | e.g. `afrikasave-frontend` |
+| `BASTION_HOST` | Bastion Elastic IP |
+| `APP_VM_HOST` | App VM private IP |
+| `SSH_PRIVATE_KEY` | Full contents of `~/.ssh/afrikasave-deploy` |
+| `DATABASE_URL` | `postgresql://appuser:<password>@<rds_endpoint>:5432/micro_savings_hub` |
+| `JWT_EXPIRES_IN` | `7d` |
+
+Add one **variable** (not a secret) under **Settings → Secrets and variables → Actions → Variables**:
+
+| Variable | Value |
+|---|---|
+| `AWS_REGION` | `eu-west-1` |
+
+#### 5. Create the `production` GitHub Environment
+
+Go to **Settings → Environments → New environment** and name it `production`. The CD deploy job is gated on this environment, allowing you to add manual approval reviewers if needed.
+
+#### 6. Trigger the first deployment
+
+```bash
+git checkout -b feat/initial-deploy
+git commit --allow-empty -m "ci: trigger initial CD deployment"
+git push origin feat/initial-deploy
+```
+
+#### 7. Verify the deployment
+
+```bash
+curl http://54.76.216.109/health
+
+ssh -J ubuntu@54.76.216.109 ubuntu@<APP_VM_PRIVATE_IP>
+docker ps
+docker compose -f /opt/afrikasave/docker-compose.prod.yml logs -f
+```
+
+### Local Development (without cloud)
+
+```bash
+cp backend/.env.example .env
+docker compose up
+```
+
+In a separate terminal:
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+### Tearing Down
+
+To cleanly destroy all AWS resources and avoid ongoing charges:
+
+```bash
+cd terraform
+terraform destroy
+```
+
+This removes all EC2 instances, RDS, ECR repositories (and all images inside them), VPC, subnets, security groups, NAT gateway, and Elastic IPs. The action is **irreversible** — all data in RDS will be permanently deleted.
+
+> **Tip:** run `terraform plan -destroy` first to preview everything that will be removed before confirming.
 
 ---
 
-## Formative 2 — Part 3: Integration & Evidence
+## CI/CD Pipeline
 
-### Branch protection (main)
+### CI Pipeline
 
-- Require PR before merge
-- Require 1 approval
-- Require CI checks to pass
-- Require branch to be up to date
+- **Triggers on:** Push to any branch (except `main`) and Pull Requests targeting `main`
+- **Steps:**
 
-**Screenshot of the rules set:**
-!(rules set)[docs/images/branch_protection_1.png]
-!(rules set)[docs/images/branch_protection_2.png]
+| Job | Steps |
+|---|---|
+| `backend` | `npm ci` → ESLint → apply schema → Jest tests → `/health` smoke test |
+| `frontend` | `npm ci` → ESLint → `vite build` |
+| `tfsec` | Scan `terraform/` for IaC misconfigurations — hard fail on any finding |
+| `checkov` | Scan `terraform/` for policy violations — soft fail, results uploaded as artifact |
+| `docker` | Build backend + frontend images → Trivy scan each → push to GHCR on pass |
 
-### CI evidence
+- **Security scans:**
+  - **tfsec** — detects Terraform misconfigurations (open security groups, unencrypted storage, public buckets, etc.)
+  - **checkov** — policy-as-code checks against CIS benchmarks and AWS best practices
+  - **Trivy** — scans Docker images for CVEs; blocks on HIGH or CRITICAL unfixed vulnerabilities; SARIF reports uploaded as artifacts
 
-**3 successful runs:**
+### CD Pipeline
 
-- Run 1: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807904494)
-- Run 2: [Commit message](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807962380)
-- Run 3: [Creating PR](https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22807996726)
+- **Triggers on:** Push to `main` (i.e. when a PR is merged)
+- **Concurrency:** `cancel-in-progress: false` — an in-flight deploy always finishes before the next starts, preventing partial states
+- **Deployment process:**
 
-**4 failed run (then fixed):**
-
-- Failed run: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808182770 (intentional test failure to prove CI blocks merge)
-- Fix commit: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264133
-- Passing run after fix: https://github.com/gloriaumutoni/micro-savings-hub/actions/runs/22808264907
-
-### Pull request evidence
-
-- PR showing CI + code review: https://github.com/gloriaumutoni/micro-savings-hub/pull/30
+```
+merge to main
+     │
+     ├─► backend  (lint + test) ──┐
+     ├─► frontend (lint + build)  ├──► build-and-push ──────────────► deploy
+     ├─► tfsec                    │    1. Configure AWS credentials    1. Install Ansible
+     └─► checkov ─────────────────┘    2. ECR login                   2. Write SSH key
+                                       3. Build backend image          3. Generate inventory
+                                       4. Trivy scan backend           4. Run ansible-playbook
+                                       5. Push backend to ECR             - Install Docker
+                                       6. Build frontend image            - Install AWS CLI
+                                       7. Trivy scan frontend             - ECR auth (IAM)
+                                       8. Push frontend to ECR            - Pull images
+                                                                          - docker compose up -d
+                                                                          - Health check
+                                                                       5. Remove SSH key
+```
 
 ---
 
-## Links
+## Security Measures
 
-- [Project Board](https://github.com/gloriaumutoni/micro-savings-hub/projects)
-- [CI Pipeline](https://github.com/gloriaumutoni/micro-savings-hub/actions)
+**Container image scanning — Trivy**
+Every Docker image is scanned for CVEs before being pushed to any registry. The pipeline hard-fails on unfixed HIGH or CRITICAL vulnerabilities. Known accepted exceptions are documented in `.trivyignore` with justification comments.
+
+**IaC scanning — tfsec and checkov**
+All Terraform configuration is scanned on every CI run. tfsec hard-fails on misconfigurations (open security groups, unencrypted resources). checkov runs as soft-fail with results uploaded as pipeline artifacts for review.
+
+**Network security — private subnet isolation**
+The App VM and RDS instance live in private subnets with no internet-facing ports. Security group rules follow least-privilege:
+- Bastion: accepts `:80` (Nginx) and `:22` (SSH) from `0.0.0.0/0`
+- App VM: accepts `:80` and `:22` only from the Bastion security group
+- RDS: accepts `:5432` only from the App VM security group
+
+**IAM instance profile — no static credentials on the VM**
+The App VM has an IAM instance profile with ECR read-only permissions. Docker authenticates to ECR using `aws ecr get-login-password` backed by the instance profile — no access keys are stored on the VM.
+
+**Secret management — GitHub Secrets**
+All sensitive values (database credentials, JWT secret, SSH private key, ECR coordinates) are stored as encrypted GitHub Secrets. They are injected as environment variables at runtime and never written to disk on the runner (except the SSH key, which is written to `~/.ssh/` and explicitly deleted with `if: always()` after the deploy job).
+
+**SSH access — key-pair only, via bastion jump**
+No password authentication. All SSH to the App VM goes through the bastion host using `ProxyJump`. `StrictHostKeyChecking=no` is used in the Ansible inventory to allow the ephemeral GitHub runner to connect without a pre-known `known_hosts` entry.
+
+---
+
+## Challenges & Solutions
+
+**Challenge: RDS provisioning time in Terraform**
+RDS instances take 10–15 minutes to become available, which exceeds what most developers expect from `terraform apply`. The initial `apply` appeared to hang.
+
+_Solution:_ Added a note in the setup instructions and set appropriate `--timeout` expectations. Terraform's built-in polling handles it automatically — no custom workarounds needed.
+
+**Challenge: App VM SSH through bastion in GitHub Actions**
+The GitHub Actions runner has no pre-existing SSH trust with the bastion or App VM, and the App VM has no public IP, requiring a `ProxyJump` through the bastion.
+
+_Solution:_ The deploy job writes the private key to `~/.ssh/afrikasave-deploy`, generates the inventory by substituting IPs from GitHub Secrets into `inventory.ini`, and uses the `ansible_ssh_common_args` in the inventory (which already includes the `ProxyCommand`) so no extra CLI flags are needed.
+
+**Challenge: Ansible inventory using template placeholders**
+`inventory.ini` uses `{{ BASTION_PUBLIC_IP }}` and `{{ APP_VM_PRIVATE_IP }}` as literal placeholders rather than real IPs, which vary per environment and must not be committed.
+
+_Solution:_ The CD pipeline uses `sed` to replace the placeholders from GitHub Secrets at runtime, writing the result to `/tmp/inventory.ini` before running Ansible.
+
+**Challenge: Docker image CVEs from base images**
+Trivy flagged CVEs in the `node:24-alpine` and `nginx:1.28-alpine` base images that were upstream-unfixed, blocking CI.
+
+_Solution:_ Added `RUN apk upgrade --no-cache` to both Dockerfiles to apply all available Alpine package security patches at build time. Truly unfixed CVEs with no available fix are added to `.trivyignore` with a comment and expiry date.
+
+**Challenge: IPv6 resolution in GitHub Actions**
+The backend tests failed to connect to the PostgreSQL service container because `localhost` resolved to `::1` (IPv6) in the GitHub Actions environment, but the Postgres container only listens on IPv4.
+
+_Solution:_ Changed `DATABASE_URL` in the CI steps to use `127.0.0.1` explicitly instead of `localhost`.
+
+---
+
+## Video Demo
+
+[Watch Demo Video](video-link)
 
 ---
 
 ## License
 
-[MIT License](./LICENSE) — Copyright (c) 2026 Avengers
+[MIT License](./LICENSE) — Copyright © 2026 Avengers
