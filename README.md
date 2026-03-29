@@ -36,58 +36,7 @@
 
 ### Architecture Diagram
 
-```mermaid
-graph TB
-    USER([User Browser])
-
-    subgraph GitHub
-        REPO[GitHub Repository]
-        CI["CI Pipeline — ci.yml
-        lint · test · tfsec · checkov · Trivy"]
-        CD["CD Pipeline — cd.yml
-        build · scan · push · deploy"]
-    end
-
-    subgraph AWS["AWS — eu-west-1"]
-        ECR["ECR Private Registry
-        afrikasave-backend
-        afrikasave-frontend"]
-
-        subgraph VPC["VPC  10.0.0.0/16"]
-            subgraph PUB["Public Subnet  10.0.1.0/24"]
-                BASTION["Bastion Host  EC2 t3.micro
-                Nginx :80 — reverse proxy
-                Elastic IP  54.76.216.109"]
-            end
-
-            subgraph PRIV["Private Subnet  10.0.2.0/24"]
-                APPVM["App VM  EC2 t3.micro
-                Docker Compose"]
-                FE["Frontend Container
-                React + Nginx :80"]
-                BE["Backend Container
-                Node.js / Express :5000"]
-            end
-
-            subgraph PRIV2["Private Subnets  10.0.2–3.0/24"]
-                RDS["RDS PostgreSQL 17
-                db.t3.micro"]
-            end
-        end
-    end
-
-    USER -->|"HTTP :80"| BASTION
-    BASTION -->|"proxy_pass :80"| FE
-    FE -->|"/api → :5000"| BE
-    BE -->|"SQL"| RDS
-
-    REPO -->|"push / PR"| CI
-    CI -->|"merge to main"| CD
-    CD -->|"docker push :sha + :latest"| ECR
-    CD -->|"ansible-playbook via SSH jump"| BASTION
-    BASTION -->|"ProxyJump SSH"| APPVM
-    APPVM -->|"docker pull"| ECR
-```
+![Architecture Diagram](docs/images/architecture.png)
 
 ### Component Description
 
