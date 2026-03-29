@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import type { CreateGroupPayload, Currency } from '../types';
-import { CURRENCIES } from '../types';
-import { createGroup } from '../services/api';
+import { useState } from "react";
+import type { CreateGroupPayload, Currency } from "../types";
+import { CURRENCIES } from "../types";
+import { createGroup } from "../services/api";
 
 interface CreateGroupModalProps {
   onClose: () => void;
@@ -9,10 +9,10 @@ interface CreateGroupModalProps {
 }
 
 const emptyForm = (): CreateGroupPayload => ({
-  name: '',
-  description: '',
+  name: "",
+  description: "",
   targetAmount: 0,
-  currency: 'RWF',
+  currency: "RWF",
 });
 
 export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) => {
@@ -23,7 +23,7 @@ export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || form.targetAmount <= 0) {
-      setError('Name and a positive target amount are required.');
+      setError("Name and a positive target amount are required.");
       return;
     }
     setLoading(true);
@@ -32,7 +32,7 @@ export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) 
       await createGroup(form);
       onCreated();
     } catch {
-      setError('Failed to create group. Please try again.');
+      setError("Failed to create group. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) 
             <input
               type="text"
               value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="e.g. Kigali Women's Chama"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
             />
@@ -67,7 +67,7 @@ export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) 
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
               value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="Optional — what is this group saving for?"
               rows={2}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
@@ -76,12 +76,16 @@ export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) 
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Target Amount *
+              </label>
               <input
                 type="number"
                 min="1"
-                value={form.targetAmount || ''}
-                onChange={e => setForm(f => ({ ...f, targetAmount: parseFloat(e.target.value) || 0 }))}
+                value={form.targetAmount || ""}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, targetAmount: parseFloat(e.target.value) || 0 }))
+                }
                 placeholder="500000"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />
@@ -90,11 +94,13 @@ export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) 
               <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
               <select
                 value={form.currency}
-                onChange={e => setForm(f => ({ ...f, currency: e.target.value as Currency }))}
+                onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value as Currency }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
               >
-                {CURRENCIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
             </div>
@@ -115,7 +121,7 @@ export const CreateGroupModal = ({ onClose, onCreated }: CreateGroupModalProps) 
               disabled={loading}
               className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition"
             >
-              {loading ? 'Creating…' : 'Create Group'}
+              {loading ? "Creating…" : "Create Group"}
             </button>
           </div>
         </form>
