@@ -11,4 +11,6 @@
 # as of today. The app doesn't expose these paths externally so the risk is low.
 # Revisit this when the base image gets an update.
 
-# CVE-XXXX-XXXXX  # example — replace with real ones after first scan run
+# As of 2026-03-29 all findings from the first scan run had fixes available
+# and were resolved by updating minimatch, tar, and running apk upgrade.
+# No CVEs currently require manual suppression.
