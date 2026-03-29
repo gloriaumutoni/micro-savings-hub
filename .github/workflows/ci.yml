@@ -170,6 +170,7 @@ jobs:
           ignore-unfixed: true
           format: table
           exit-code: "0"
+          trivyignores: .trivyignore
 
       - name: Trivy — scan backend image (fail on HIGH or CRITICAL)
         uses: aquasecurity/trivy-action@v0.35.0
@@ -180,6 +181,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-backend.sarif
+          trivyignores: .trivyignore
 
       - name: Upload backend Trivy SARIF results
         uses: actions/upload-artifact@v4
@@ -219,6 +221,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-frontend.sarif
+          trivyignores: .trivyignore
 
       - name: Trivy — scan frontend image (table summary)
         uses: aquasecurity/trivy-action@v0.35.0
@@ -228,6 +231,7 @@ jobs:
           ignore-unfixed: true
           format: table
           exit-code: "0"
+          trivyignores: .trivyignore
 
       - name: Upload frontend Trivy SARIF results
         uses: actions/upload-artifact@v4
