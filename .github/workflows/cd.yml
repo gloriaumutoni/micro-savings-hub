@@ -100,3 +100,25 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
+
+   tfsec:
+    name: IaC — tfsec (Terraform)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tfsec on terraform/
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+          format: sarif
+          sarif_file: tfsec.sarif
+
+      - name: Upload tfsec SARIF
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tfsec-sarif
+          path: tfsec.sarif
