@@ -26,7 +26,7 @@
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "jest": "^30.2.0",
-    "mon": "^3.1.14",
+    "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
     "supertest": "^7.2.2"
   }
