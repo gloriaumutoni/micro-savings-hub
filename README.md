@@ -50,7 +50,7 @@ Runs `docker-compose.prod.yml` with two containers: the React/Nginx frontend and
 Managed database spanning two private subnets (required by RDS subnet groups). Only the App VM's security group is allowed inbound on port 5432.
 
 **ECR Private Registry**
-Two repositories — `afrikasave-backend` and `afrikasave-frontend` — provisioned by Terraform with lifecycle policies. Images are tagged with the commit SHA for traceability and `:latest` for convenience.
+Two repositories — `micro-savings-hub` (backend) and `micro-savings-hub-frontend` — provisioned by Terraform with lifecycle policies. Images are tagged with the commit SHA for traceability and `:latest` for convenience.
 
 **GitHub Actions CI/CD**
 CI runs on every branch push and PR, blocking merge on any lint, test, or security failure. CD triggers on merge to `main`, re-runs all gates, pushes both images to ECR, then uses Ansible over SSH to deploy.
@@ -86,7 +86,7 @@ CI runs on every branch push and PR, blocking merge on any lint, test, or securi
 micro-savings-hub/
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml                    # CI — lint, test, IaC scans, Trivy, GHCR push
+│   │   ├── ci.yml                    # CI — lint, test, IaC scans, Docker build, Trivy scan
 │   │   └── cd.yml                    # CD — re-runs CI, pushes to ECR, deploys via Ansible
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
@@ -197,8 +197,8 @@ Go to **Settings → Secrets and variables → Actions → Secrets** and add:
 | `AWS_ACCESS_KEY_ID` | IAM deploy user key |
 | `AWS_SECRET_ACCESS_KEY` | IAM deploy user secret |
 | `ECR_REGISTRY` | `<account>.dkr.ecr.<region>.amazonaws.com` |
-| `ECR_BACKEND_REPOSITORY` | e.g. `afrikasave-backend` |
-| `ECR_FRONTEND_REPOSITORY` | e.g. `afrikasave-frontend` |
+| `ECR_BACKEND_REPOSITORY` | e.g. `micro-savings-hub` |
+| `ECR_FRONTEND_REPOSITORY` | e.g. `micro-savings-hub-frontend` |
 | `BASTION_HOST` | Bastion Elastic IP |
 | `APP_VM_HOST` | App VM private IP |
 | `SSH_PRIVATE_KEY` | Full contents of `~/.ssh/afrikasave-deploy` |
@@ -274,7 +274,7 @@ This removes all EC2 instances, RDS, ECR repositories (and all images inside the
 | `frontend` | `npm ci` → ESLint → `vite build` |
 | `tfsec` | Scan `terraform/` for IaC misconfigurations — hard fail on any finding |
 | `checkov` | Scan `terraform/` for policy violations — soft fail, results uploaded as artifact |
-| `docker` | Build backend + frontend images → Trivy scan each → push to GHCR on pass |
+| `docker` | Build backend + frontend images → Trivy scan each (no push — CI only validates) |
 
 - **Security scans:**
   - **tfsec** — detects Terraform misconfigurations (open security groups, unencrypted storage, public buckets, etc.)
