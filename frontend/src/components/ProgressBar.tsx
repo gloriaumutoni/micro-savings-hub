@@ -1,12 +1,12 @@
 interface ProgressBarProps {
-  value: number;  
-  target: number; 
+  value: number;
+  target: number;
   currency: string;
 }
 
 const formatAmount = (amount: number, currency: string) =>
-  new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) +
-  ' ' +
+  new Intl.NumberFormat("en-US", { style: "decimal", maximumFractionDigits: 0 }).format(amount) +
+  " " +
   currency;
 
 export const ProgressBar = ({ value, target, currency }: ProgressBarProps) => {
@@ -22,13 +22,15 @@ export const ProgressBar = ({ value, target, currency }: ProgressBarProps) => {
       <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            isComplete ? 'bg-emerald-500' : 'bg-green-500'
+            isComplete ? "bg-emerald-500" : "bg-green-500"
           }`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className={`text-xs mt-1 font-semibold ${isComplete ? 'text-emerald-600' : 'text-gray-400'}`}>
-        {isComplete ? 'Goal reached!' : `${pct.toFixed(1)}% of goal`}
+      <p
+        className={`text-xs mt-1 font-semibold ${isComplete ? "text-emerald-600" : "text-gray-400"}`}
+      >
+        {isComplete ? "Goal reached!" : `${pct.toFixed(1)}% of goal`}
       </p>
     </div>
   );

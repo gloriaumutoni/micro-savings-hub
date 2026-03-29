@@ -8,11 +8,7 @@ interface ContributeModalProps {
   onContributed: () => void;
 }
 
-export const ContributeModal = ({
-  group,
-  onClose,
-  onContributed,
-}: ContributeModalProps) => {
+export const ContributeModal = ({ group, onClose, onContributed }: ContributeModalProps) => {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +37,7 @@ export const ContributeModal = ({
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">
-              Record Contribution
-            </h2>
+            <h2 className="text-lg font-bold text-gray-900">Record Contribution</h2>
             <p className="text-xs text-gray-400 mt-0.5">{group.name}</p>
           </div>
           <button
