@@ -2,8 +2,13 @@
 
 const { Pool } = require('pg');
 
+const ssl = process.env.DATABASE_URL?.includes('sslmode=disable')
+  ? false
+  : { rejectUnauthorized: false };
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl,
 });
 
 pool.on('error', (err) => {
