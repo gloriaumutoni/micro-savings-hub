@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   backend:
@@ -101,7 +101,7 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-   tfsec:
+  tfsec:
     name: IaC — tfsec (Terraform)
     runs-on: ubuntu-latest
 
@@ -120,7 +120,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tfsec-sarif
+          name: cd-tfsec-sarif
           path: tfsec.sarif
 
   checkov:
@@ -143,7 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: checkov-results
+          name: cd-checkov-results
           path: checkov-results.txt
 
   build-and-push:
@@ -208,7 +208,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trivy-backend-sarif
+          name: cd-trivy-backend-sarif
           path: trivy-backend.sarif
 
       - name: Push backend image to ECR
@@ -252,7 +252,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trivy-frontend-sarif
+          name: cd-trivy-frontend-sarif
           path: trivy-frontend.sarif
 
       - name: Push frontend image to ECR
@@ -294,14 +294,14 @@ jobs:
       - name: Write SSH deploy key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/afrikasave-deploy
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/afrikasave-deploy
           chmod 600 ~/.ssh/afrikasave-deploy
 
       - name: Generate Ansible inventory
         run: |
           sed \
-            -e "s|{{ BASTION_PUBLIC_IP }}|${{ secrets.BASTION_PUBLIC_IP }}|g" \
-            -e "s|{{ APP_VM_PRIVATE_IP }}|${{ secrets.APP_VM_PRIVATE_IP }}|g" \
+            -e "s|{{ BASTION_PUBLIC_IP }}|${{ secrets.BASTION_HOST }}|g" \
+            -e "s|{{ APP_VM_PRIVATE_IP }}|${{ secrets.APP_VM_HOST }}|g" \
             ansible/inventory.ini > /tmp/inventory.ini
 
       - name: Run Ansible deploy playbook
@@ -314,9 +314,9 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
-          APP_VM_HOST: ${{ secrets.APP_VM_PRIVATE_IP }}
-        run: |
-          ansible-playbook \
-            -i /tmp/inventory.ini \
-            ansible/deploy.yml \
-            --ssh-extra-args="-o StrictHostKeyChecking=no"
+          APP_VM_HOST: ${{ secrets.APP_VM_HOST }}
+        run: ansible-playbook -i /tmp/inventory.ini ansible/deploy.yml
+
+      - name: Remove SSH deploy key
+        if: always()
+        run: rm -f ~/.ssh/afrikasave-deploy
