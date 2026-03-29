@@ -190,20 +190,6 @@ jobs:
           name: trivy-backend-sarif
           path: trivy-backend.sarif
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Tag and push backend image to GHCR
-        run: |
-          docker tag micro-savings-hub-backend:ci ghcr.io/${{ github.repository_owner }}/micro-savings-hub:${{ github.sha }}
-          docker tag micro-savings-hub-backend:ci ghcr.io/${{ github.repository_owner }}/micro-savings-hub:latest
-          docker push ghcr.io/${{ github.repository_owner }}/micro-savings-hub:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository_owner }}/micro-savings-hub:latest
-
       - name: Build frontend image (local tag for scanning)
         uses: docker/build-push-action@v6
         with:
