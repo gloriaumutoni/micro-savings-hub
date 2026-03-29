@@ -161,6 +161,15 @@ jobs:
           load: true
           tags: micro-savings-hub-backend:ci
 
+      - name: Trivy — scan backend image (table summary)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: micro-savings-hub-backend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+
       - name: Trivy — scan backend image (fail on HIGH or CRITICAL)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
@@ -170,15 +179,6 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-backend.sarif
-
-      - name: Trivy — scan backend image (table summary)
-        uses: aquasecurity/trivy-action@v0.35.0
-        with:
-          image-ref: micro-savings-hub-backend:ci
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          format: table
-          exit-code: "0"
 
       - name: Upload backend Trivy SARIF results
         uses: actions/upload-artifact@v4
