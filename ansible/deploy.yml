@@ -108,6 +108,37 @@
         docker login --username AWS --password-stdin {{ ecr_registry }}
       changed_when: false
 
+    # ── Database bootstrap ────────────────────────────────────────────────────
+    # Runs init.sql on first deploy only — skipped if the users table exists.
+    # Future schema changes should use versioned migrations instead.
+
+    - name: Install PostgreSQL client
+      apt:
+        name: postgresql-client
+        state: present
+
+    - name: Copy init.sql to App VM
+      copy:
+        src: ../backend/db/init.sql
+        dest: /tmp/init.sql
+        mode: "0644"
+
+    - name: Check if database schema already exists
+      shell: >
+        psql "$DATABASE_URL" -t -c
+        "SELECT COUNT(*) FROM information_schema.tables
+         WHERE table_schema='public' AND table_name='users';"
+      environment:
+        DATABASE_URL: "{{ lookup('env', 'DATABASE_URL') }}"
+      register: schema_check
+      changed_when: false
+
+    - name: Apply database schema (first deploy only)
+      shell: psql "$DATABASE_URL" -f /tmp/init.sql
+      environment:
+        DATABASE_URL: "{{ lookup('env', 'DATABASE_URL') }}"
+      when: schema_check.stdout | trim == '0'
+
     # ── Application deployment ────────────────────────────────────────────────
 
     - name: Create application directory
