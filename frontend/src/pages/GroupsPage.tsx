@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import type { Group } from '../types';
-import { fetchGroups } from '../services/api';
-import { GroupCard } from '../components/GroupCard';
-import { CreateGroupModal } from '../components/CreateGroupModal';
+import { useEffect, useState } from "react";
+import type { Group } from "../types";
+import { fetchGroups } from "../services/api";
+import { GroupCard } from "../components/GroupCard";
+import { CreateGroupModal } from "../components/CreateGroupModal";
+import { UserMenu } from "../components/UserMenu";
 
 export const GroupsPage = () => {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -17,13 +18,15 @@ export const GroupsPage = () => {
       const data = await fetchGroups();
       setGroups(data);
     } catch {
-      setError('Could not load groups. Make sure the backend is running.');
+      setError("Could not load groups. Make sure the backend is running.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadGroups(); }, []);
+  useEffect(() => {
+    loadGroups();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -37,12 +40,15 @@ export const GroupsPage = () => {
               <p className="text-xs text-gray-400">Community Savings Tracker</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-sm"
-          >
-            + New Group
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCreate(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-sm"
+            >
+              + New Group
+            </button>
+            <UserMenu />
+          </div>
         </div>
       </header>
 
@@ -50,7 +56,7 @@ export const GroupsPage = () => {
         <div className="mb-6">
           <h2 className="text-xl font-bold text-gray-900">Savings Groups</h2>
           <p className="text-sm text-gray-400 mt-0.5">
-            {loading ? 'Loading…' : `${groups.length} group${groups.length !== 1 ? 's' : ''}`}
+            {loading ? "Loading…" : `${groups.length} group${groups.length !== 1 ? "s" : ""}`}
           </p>
         </div>
 
@@ -63,7 +69,10 @@ export const GroupsPage = () => {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse h-36" />
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse h-36"
+              />
             ))}
           </div>
         ) : groups.length === 0 ? (
@@ -80,7 +89,7 @@ export const GroupsPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {groups.map(group => (
+            {groups.map((group) => (
               <GroupCard key={group.id} group={group} />
             ))}
           </div>
