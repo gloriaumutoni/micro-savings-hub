@@ -160,6 +160,7 @@ jobs:
           context: ./backend
           load: true
           tags: micro-savings-hub-backend:ci
+          no-cache: true
 
       - name: Trivy — scan backend image (table summary)
         uses: aquasecurity/trivy-action@v0.35.0
@@ -207,6 +208,7 @@ jobs:
           context: ./frontend
           load: true
           tags: micro-savings-hub-frontend:ci
+          no-cache: true
 
       - name: Trivy — scan frontend image (fail on HIGH or CRITICAL)
         uses: aquasecurity/trivy-action@v0.35.0
