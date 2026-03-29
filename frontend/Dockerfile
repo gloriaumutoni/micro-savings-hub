@@ -15,7 +15,9 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Stage 2: Serve with Nginx
-FROM nginx:1.27-alpine
+FROM nginx:1.28-alpine
+
+RUN apk upgrade --no-cache
 
 # Remove default Nginx config and replace with ours
 RUN rm /etc/nginx/conf.d/default.conf
