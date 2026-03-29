@@ -18,6 +18,7 @@ module.exports = [
         process: 'readonly',
         console: 'readonly',
         Buffer: 'readonly',
+        URL: 'readonly',
       },
     },
     rules: {
