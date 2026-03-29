@@ -122,3 +122,27 @@ jobs:
         with:
           name: tfsec-sarif
           path: tfsec.sarif
+
+  checkov:
+    name: IaC — checkov (Terraform)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run checkov on terraform/
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+          output_file_path: checkov-results.txt
+
+      - name: Upload checkov results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkov-results
+          path: checkov-results.txt
+
