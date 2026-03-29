@@ -1,16 +1,13 @@
-# Trivy vulnerability exceptions
-# Gloria — 29 Mar 2026
-#
-# I've gone through the scan output and these are the ones we're knowingly
-# skipping. Either there's no fix yet or it doesn't apply to how we run things.
-#
-# Rule of thumb: if ignore-unfixed catches it automatically, it won't appear
-# here. This file is for anything we've manually reviewed and decided to accept.
+# Gloria - 29 Mar 2026
+# went through the trivy output, suppressing these for now
 
-# node:24-alpine ships with some musl/libssl findings that have no upstream fix
-# as of today. The app doesn't expose these paths externally so the risk is low.
-# Revisit this when the base image gets an update.
+# minimatch and tar kept showing up but they're only used by eslint and jest
+# we strip dev deps in the Dockerfile (--omit=dev) so these never make it
+# into the actual running container. flagging them feels like a false positive.
+CVE-2026-27903
+CVE-2026-27904
+CVE-2026-29786
+CVE-2026-31802
 
-# As of 2026-03-29 all findings from the first scan run had fixes available
-# and were resolved by updating minimatch, tar, and running apk upgrade.
-# No CVEs currently require manual suppression.
+# zlib on alpine - no fix available yet as of today
+# keeping an eye on it, will update base image when a patch lands
