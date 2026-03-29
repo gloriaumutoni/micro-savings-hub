@@ -277,3 +277,46 @@ jobs:
           echo "Unfixed CVEs       : ignored"
           echo "Image tag          : ${{ github.sha }}"
           echo "============================================"
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: pip install --quiet ansible
+
+      - name: Write SSH deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/afrikasave-deploy
+          chmod 600 ~/.ssh/afrikasave-deploy
+
+      - name: Generate Ansible inventory
+        run: |
+          sed \
+            -e "s|{{ BASTION_PUBLIC_IP }}|${{ secrets.BASTION_PUBLIC_IP }}|g" \
+            -e "s|{{ APP_VM_PRIVATE_IP }}|${{ secrets.APP_VM_PRIVATE_IP }}|g" \
+            ansible/inventory.ini > /tmp/inventory.ini
+
+      - name: Run Ansible deploy playbook
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_BACKEND_REPOSITORY: ${{ secrets.ECR_BACKEND_REPOSITORY }}
+          ECR_FRONTEND_REPOSITORY: ${{ secrets.ECR_FRONTEND_REPOSITORY }}
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-1' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+          APP_VM_HOST: ${{ secrets.APP_VM_PRIVATE_IP }}
+        run: |
+          ansible-playbook \
+            -i /tmp/inventory.ini \
+            ansible/deploy.yml \
+            --ssh-extra-args="-o StrictHostKeyChecking=no"
