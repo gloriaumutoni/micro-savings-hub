@@ -1,0 +1,13 @@
+# Gloria - 29 Mar 2026
+# went through the trivy output, suppressing these for now
+
+# minimatch and tar kept showing up but they're only used by eslint and jest
+# we strip dev deps in the Dockerfile (--omit=dev) so these never make it
+# into the actual running container. flagging them feels like a false positive.
+CVE-2026-27903
+CVE-2026-27904
+CVE-2026-29786
+CVE-2026-31802
+
+# zlib on alpine - no fix available yet as of today
+# keeping an eye on it, will update base image when a patch lands

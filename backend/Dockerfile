@@ -9,6 +9,8 @@ RUN npm ci --omit=dev
 
 # Stage 2: Final image — clean, non-root, minimal
 FROM node:24-alpine
+# Upgrade all system packages to pick up security patches (e.g. zlib CVE-2026-22184)
+RUN apk upgrade --no-cache
 
 # Create a non-root user and group for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

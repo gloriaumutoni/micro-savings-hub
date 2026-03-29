@@ -95,15 +95,100 @@ jobs:
       - run: npm run build
         working-directory: frontend
 
-  docker:
-    name: Docker — Build & Push to GHCR
+  tfsec:
+    name: IaC — tfsec (Terraform)
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec on terraform/
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+          format: sarif
+          sarif_file: tfsec.sarif
+
+      - name: Upload tfsec SARIF results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tfsec-sarif
+          path: tfsec.sarif
+
+  checkov:
+    name: IaC — checkov (Terraform)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run checkov on terraform/
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+          output_file_path: checkov-results.txt
+
+      - name: Upload checkov results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkov-results
+          path: checkov-results.txt
+
+  docker:
+    name: Docker — Build, Trivy scan, Push to GHCR
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, tfsec, checkov]
     permissions:
       contents: read
       packages: write
+      security-events: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image (local tag for scanning)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          load: true
+          tags: micro-savings-hub-backend:ci
+          no-cache: true
+
+      - name: Trivy — scan backend image (table summary)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: micro-savings-hub-backend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+          trivyignores: .trivyignore
+
+      - name: Trivy — scan backend image (fail on HIGH or CRITICAL)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: micro-savings-hub-backend:ci
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-backend.sarif
+          trivyignores: .trivyignore
+
+      - name: Upload backend Trivy SARIF results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-backend-sarif
+          path: trivy-backend.sarif
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -112,11 +197,64 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Tag and push backend image to GHCR
+        run: |
+          docker tag micro-savings-hub-backend:ci ghcr.io/${{ github.repository_owner }}/micro-savings-hub:${{ github.sha }}
+          docker tag micro-savings-hub-backend:ci ghcr.io/${{ github.repository_owner }}/micro-savings-hub:latest
+          docker push ghcr.io/${{ github.repository_owner }}/micro-savings-hub:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/micro-savings-hub:latest
+
+      - name: Build frontend image (local tag for scanning)
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/micro-savings-hub:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/micro-savings-hub:latest
+          context: ./frontend
+          load: true
+          tags: micro-savings-hub-frontend:ci
+          no-cache: true
+
+      - name: Trivy — scan frontend image (table summary)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: micro-savings-hub-frontend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+          trivyignores: .trivyignore
+
+      - name: Trivy — scan frontend image (fail on HIGH or CRITICAL)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: micro-savings-hub-frontend:ci
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-frontend.sarif
+          trivyignores: .trivyignore
+
+      - name: Upload frontend Trivy SARIF results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-frontend-sarif
+          path: trivy-frontend.sarif
+
+      - name: Security scan summary
+        if: always()
+        run: |
+          echo "============================================"
+          echo "        DEVSECOPS SCAN SUMMARY"
+          echo "============================================"
+          echo "tfsec    — Terraform IaC scan complete"
+          echo "checkov  — Terraform IaC scan complete"
+          echo "Trivy    — Backend image scan complete"
+          echo "Trivy    — Frontend image scan complete"
+          echo "--------------------------------------------"
+          echo "Severity threshold : HIGH, CRITICAL"
+          echo "Unfixed CVEs       : ignored"
+          echo "SARIF artifacts    : trivy-backend-sarif"
+          echo "                     trivy-frontend-sarif"
+          echo "                     tfsec-sarif"
+          echo "                     checkov-results"
+          echo "============================================"
