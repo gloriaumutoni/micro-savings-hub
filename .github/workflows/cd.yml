@@ -1,0 +1,322 @@
+name: CD — Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    name: Backend — Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: micro_savings_hub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d micro_savings_hub_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Lint backend
+        working-directory: backend
+        run: npm run lint
+
+      - name: Apply database schema
+        working-directory: backend
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d micro_savings_hub_test -f db/init.sql
+
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/micro_savings_hub_test?sslmode=disable
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: 1d
+        run: npm test
+
+      - name: Verify backend starts (smoke test)
+        working-directory: backend
+        env:
+          PORT: 5001
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/micro_savings_hub_test?sslmode=disable
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: 1d
+        run: |
+          node app.js &
+          sleep 3
+          curl -f http://localhost:5001/health
+          kill %1
+
+  frontend:
+    name: Frontend — Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+  tfsec:
+    name: IaC — tfsec (Terraform)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tfsec on terraform/
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+          format: sarif
+          sarif_file: tfsec.sarif
+
+      - name: Upload tfsec SARIF
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cd-tfsec-sarif
+          path: tfsec.sarif
+
+  checkov:
+    name: IaC — checkov (Terraform)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run checkov on terraform/
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+          output_file_path: checkov-results.txt
+
+      - name: Upload checkov results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cd-checkov-results
+          path: checkov-results.txt
+
+  build-and-push:
+    name: Build, Scan & Push to ECR
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, tfsec, checkov]
+
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-1' }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Export image tag
+        id: tag
+        run: echo "value=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+
+      - name: Build backend image (local scan tag)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          load: true
+          tags: backend:ci
+          no-cache: true
+
+      - name: Trivy — scan backend (summary table)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: backend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+          trivyignores: .trivyignore
+
+      - name: Trivy — scan backend (fail on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: backend:ci
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-backend.sarif
+          trivyignores: .trivyignore
+
+      - name: Upload backend Trivy SARIF
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cd-trivy-backend-sarif
+          path: trivy-backend.sarif
+
+      - name: Push backend image to ECR
+        run: |
+          docker tag backend:ci ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_BACKEND_REPOSITORY }}:${{ github.sha }}
+          docker tag backend:ci ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_BACKEND_REPOSITORY }}:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_BACKEND_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_BACKEND_REPOSITORY }}:latest
+
+
+      - name: Build frontend image (local scan tag)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          load: true
+          tags: frontend:ci
+          no-cache: true
+
+      - name: Trivy — scan frontend (summary table)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: frontend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+          trivyignores: .trivyignore
+
+      - name: Trivy — scan frontend (fail on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: frontend:ci
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-frontend.sarif
+          trivyignores: .trivyignore
+
+      - name: Upload frontend Trivy SARIF
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cd-trivy-frontend-sarif
+          path: trivy-frontend.sarif
+
+      - name: Push frontend image to ECR
+        run: |
+          docker tag frontend:ci ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FRONTEND_REPOSITORY }}:${{ github.sha }}
+          docker tag frontend:ci ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FRONTEND_REPOSITORY }}:latest
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FRONTEND_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FRONTEND_REPOSITORY }}:latest
+
+      - name: Security scan summary
+        if: always()
+        run: |
+          echo "============================================"
+          echo "        DEVSECOPS SCAN SUMMARY (CD)"
+          echo "============================================"
+          echo "tfsec    — Terraform IaC scan complete"
+          echo "checkov  — Terraform IaC scan complete"
+          echo "Trivy    — Backend image scan complete"
+          echo "Trivy    — Frontend image scan complete"
+          echo "--------------------------------------------"
+          echo "Severity threshold : HIGH, CRITICAL"
+          echo "Unfixed CVEs       : ignored"
+          echo "Image tag          : ${{ github.sha }}"
+          echo "============================================"
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: pip install --quiet ansible
+
+      - name: Write SSH deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/afrikasave-deploy
+          chmod 600 ~/.ssh/afrikasave-deploy
+
+      - name: Generate Ansible inventory
+        run: |
+          sed \
+            -e "s|{{ BASTION_PUBLIC_IP }}|${{ secrets.BASTION_HOST }}|g" \
+            -e "s|{{ APP_VM_PRIVATE_IP }}|${{ secrets.APP_VM_HOST }}|g" \
+            ansible/inventory.ini > /tmp/inventory.ini
+
+      - name: Run Ansible deploy playbook
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_BACKEND_REPOSITORY: ${{ secrets.ECR_BACKEND_REPOSITORY }}
+          ECR_FRONTEND_REPOSITORY: ${{ secrets.ECR_FRONTEND_REPOSITORY }}
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-1' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+          APP_VM_HOST: ${{ secrets.APP_VM_HOST }}
+        run: ansible-playbook -i /tmp/inventory.ini ansible/deploy.yml
+
+      - name: Remove SSH deploy key
+        if: always()
+        run: rm -f ~/.ssh/afrikasave-deploy
