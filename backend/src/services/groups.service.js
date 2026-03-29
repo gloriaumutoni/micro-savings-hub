@@ -108,13 +108,22 @@ async function getGroupById(groupId, userId) {
     [groupId]
   );
 
+  const { rows: members } = await pool.query(
+    `SELECT u.id, u.email, gm.role, gm.joined_at AS "joinedAt"
+     FROM group_memberships gm
+     JOIN users u ON u.id = gm.user_id
+     WHERE gm.group_id = $1
+     ORDER BY gm.joined_at ASC`,
+    [groupId]
+  );
+
   const group = groupRows[0];
   const progress =
     Number(group.targetAmount) > 0
       ? Math.min(100, Math.round((Number(group.totalSaved) / Number(group.targetAmount)) * 100))
       : 0;
 
-  return { ...group, userRole: memberRows[0].role, progress, contributions };
+  return { ...group, userRole: memberRows[0].role, progress, contributions, members };
 }
 
 // ─── Update group details (owner only) ───────────────────────────────────────
