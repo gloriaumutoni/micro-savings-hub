@@ -42,7 +42,7 @@ export const LoginPage = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-5">Sign in</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-5">Log in</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
