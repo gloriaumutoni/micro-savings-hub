@@ -363,7 +363,7 @@ _Solution:_ Changed `DATABASE_URL` in the CI steps to use `127.0.0.1` explicitly
 
 ## Video Demo
 
-[Watch Demo Video](video-link)
+[Watch Demo Video](https://drive.google.com/file/d/1CgyqXNplMmJVjlcFrscg1pjk7lp54UJn/view)
 
 ---
 
