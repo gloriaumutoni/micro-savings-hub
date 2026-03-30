@@ -84,7 +84,7 @@ export const LoginPage = () => {
               disabled={loading}
               className="w-full bg-green-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Signing in…" : "Log in"}
             </button>
           </form>
         </div>

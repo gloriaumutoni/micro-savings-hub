@@ -27,7 +27,18 @@ export const InviteModal = ({ groupId, onClose }: InviteModalProps) => {
 
   const handleCopy = async () => {
     if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl);
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = inviteUrl;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -77,7 +88,7 @@ export const InviteModal = ({ groupId, onClose }: InviteModalProps) => {
             </p>
 
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-5">
-              <span className="text-xs text-gray-600 truncate flex-1 font-mono">{inviteUrl}</span>
+              <span className="text-xs text-gray-600 break-all flex-1 font-mono">{inviteUrl}</span>
               <button
                 onClick={handleCopy}
                 className="text-xs font-semibold text-green-600 hover:text-green-700 whitespace-nowrap"
